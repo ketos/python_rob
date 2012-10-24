@@ -1,0 +1,19 @@
+* Der Spieler wird iterativ nach dem nächsten Zug gefragt.
+* Innerhalb eines Zuges kann er 
+o Sensorenabfragen (1 Spielrunde)
+o Fahrbefehle Vorwärts,  Rechts/Links Drehen, Stehen Bleiben
+o Stein setzten
+* Robot State: Batterie, Anzahl Steine als dictionary
+* Sensordaten:
+o Bumper (bei Vorwärtsfahrt, an/aus)
+o Rechts/links/vorne: roboter/wand/frei/stein/ladestation
+
+
+Ablauf:
+- Init()
+- While true:
+o Send sensor data (aktueller weltzustand unmittelbar vor dem zug)
+o Get next move
+
+
+- Verschiedene ziele oder ein ziel?
