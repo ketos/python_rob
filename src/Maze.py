@@ -15,5 +15,8 @@ class Maze(object):
     def getSensorData(self, Pose):       # pose as (x,y,theta) tuple
         pass
     
-    def checkPosition(self, position):   # test if a new position is valid
+    def checkNewPosition(self, position):   # test if a new position is valid
+        pass
+
+    def setStone(self, pose):
         pass
