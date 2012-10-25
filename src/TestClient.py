@@ -8,7 +8,7 @@ from BaseRobotClient import *
 
 class TestClient(BaseRobotClient):
     def __init__(self):
-        super(TestClient,self).__init__()
+        super(TestClient, self).__init__()
     
 if __name__ == "__main__":
     robot = TestClient()

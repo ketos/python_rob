@@ -8,10 +8,11 @@ import sys
 
 from Labyrinth import *
 from BaseRobotClient import *
+
 class RobotState(object):
     def __init__(self):
-        self.pose = [0.0, 0.0 ,0.0]
-        self.batterie = 100
+        self.pose = [0.0, 0.0, 0.0]
+        self.battery = 100
         self.stones = 3
         self.sense = False
 
@@ -21,7 +22,8 @@ class GameMaster(object):
         self.robot_states = {}
         self.labyrinth = Labyrinth()
         pass
-    def addClient(self,clientName):
+
+    def addClient(self, clientName):
         print clientName
         module = __import__(clientName)
         print dir(module)
@@ -30,6 +32,7 @@ class GameMaster(object):
 
     def initGame(self):
         pass
+    
     def gameFinished(self):
         pass
     
@@ -42,17 +45,17 @@ class GameMaster(object):
                 command = robot.getNextCommand()
 
                 if command == Command.RightTurn:
-                    self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] + 1)%4
+                    self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] + 1) % 4
                 if command == Command.LeftTurn:
-                    self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] - 1)%4
+                    self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] - 1) % 4
                 if command == Command.Sense:
                     self.robot_states[name].sense = True
-                if command ==  Command.DropStone:
+                if command == Command.DropStone:
                     self.robot_states[name].stones -= 1
                     if self.robot_states[name].stones > 0:
                         self.labyrinth.setStone(self.robot_states[name].pose)
-                if command ==  Command.MoveForward:
-                    position = [0,0]
+                if command == Command.MoveForward:
+                    position = [0, 0]
                     if self.robot_states[name].pose[2] == 0: 
                         position[0] = self.robot_states[name].pose[0] + 1
                     if self.robot_states[name].pose[2] == 2: 
@@ -66,6 +69,7 @@ class GameMaster(object):
                         self.robot_states[name].pose[1] = position[1]
                     else:
                         self.robot_clients[name].setBumper()
+
 if __name__ == "__main__":
     master = GameMaster()
     master.initGame()
