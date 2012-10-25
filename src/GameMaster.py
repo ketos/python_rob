@@ -6,7 +6,7 @@ Created on Wed Oct 24 13:57:26 2012
 """
 import sys
 
-from Labyrinth import *
+from Maze import *
 from BaseRobotClient import *
 
 class RobotState(object):
@@ -20,7 +20,7 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.labyrinth = Labyrinth()
+        self.maze = Maze()
         pass
 
     def addClient(self, clientName):
@@ -40,7 +40,7 @@ class GameMaster(object):
         while not self.gameFinished():
             for name, robot in self.robot_clients.items():
                 if self.robot_states[name].sense == True:
-                    data = self.labyrinth.getSensorData(self.robot_states[name].pose)
+                    data = self.maze.getSensorData(self.robot_states[name].pose)
                     robot.setSensorData(data)
                 command = robot.getNextCommand()
 
@@ -53,7 +53,7 @@ class GameMaster(object):
                 if command == Command.DropStone:
                     self.robot_states[name].stones -= 1
                     if self.robot_states[name].stones > 0:
-                        self.labyrinth.setStone(self.robot_states[name].pose)
+                        self.maze.setStone(self.robot_states[name].pose)
                 if command == Command.MoveForward:
                     position = [0, 0]
                     if self.robot_states[name].pose[2] == 0: 
@@ -64,7 +64,7 @@ class GameMaster(object):
                         position[1] = self.robot_states[name].pose[1] + 1
                     if self.robot_states[name].pose[2] == 3: 
                         position[1] = self.robot_states[name].pose[1] - 1
-                    if self.labyrinth.checkNewPosition(position) == True:
+                    if self.maze.checkNewPosition(position) == True:
                         self.robot_states[name].pose[0] = position[0]
                         self.robot_states[name].pose[1] = position[1]
                     else:
