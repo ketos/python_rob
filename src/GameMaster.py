@@ -45,7 +45,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 15: #not self.gameFinished()
+        while i < 1000: #not self.gameFinished()
             i += 1
             sleep(0.01)
             self.visualizer.showState()
@@ -56,11 +56,15 @@ class GameMaster(object):
                     robot.setSensorData(data)
                     self.robot_states[name].sense = False
                 command = robot.getNextCommand()
-                print command
+                print "command:", Command.names[command]
                 if command == Command.RightTurn:
-                    self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] + 1) % 4
+                    if self.robot_states[name].battery > 0:
+                        self.robot_states[name].battery -= 1
+                        self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] + 1) % 4
                 if command == Command.LeftTurn:
-                    self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] - 1) % 4
+                    if self.robot_states[name].battery > 0:
+                        self.robot_states[name].battery -= 1
+                        self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] - 1) % 4
                 if command == Command.Sense:
                     self.robot_states[name].sense = True
                 if command == Command.DropStone:
@@ -72,29 +76,34 @@ class GameMaster(object):
                         if self.robot_states[name].pose[2] == 2:
                             position[1] -= 1
                         if self.robot_states[name].pose[2] == 1:
+                            position[0] -= 1
+                        if self.robot_states[name].pose[2] == 3:
+                            position[0] += 1
+                        if self.maze.checkPositionFree(position) == True:
+                            self.maze.setStone(position)
+                if command == Command.MoveForward:
+                    if self.robot_states[name].battery > 0:
+                        self.robot_states[name].battery -= 1
+                        position = [self.robot_states[name].pose[0], self.robot_states[name].pose[1]]
+                        if self.robot_states[name].pose[2] == 0:
+                            position[1] -= 1
+                        if self.robot_states[name].pose[2] == 2:
+                            position[1] += 1
+                        if self.robot_states[name].pose[2] == 1:
                             position[0] += 1
                         if self.robot_states[name].pose[2] == 3:
                             position[0] -= 1
                         if self.maze.checkPositionFree(position) == True:
-                            self.maze.setStone(position)
-                if command == Command.MoveForward:
-                    position = [self.robot_states[name].pose[0], self.robot_states[name].pose[1]]
-                    if self.robot_states[name].pose[2] == 0:
-                        position[1] -= 1
-                    if self.robot_states[name].pose[2] == 2:
-                        position[1] += 1
-                    if self.robot_states[name].pose[2] == 1:
-                        position[0] -= 1
-                    if self.robot_states[name].pose[2] == 3:
-                        position[0] += 1
-                    if self.maze.checkPositionFree(position) == True:
-                        print "update robot position"
-                        self.robot_states[name].pose[0] = position[0]
-                        self.robot_states[name].pose[1] = position[1]
-                    else:
-                        print "bumper"
-                        self.robot_clients[name].setBumper()
-                
+                            print "update robot position"
+                            self.robot_states[name].pose[0] = position[0]
+                            self.robot_states[name].pose[1] = position[1]
+                        else:
+                            print "bumper"
+                            self.robot_clients[name].setBumper()
+                if command == Command.Stay:
+                    if self.robot_states[name].battery < 100:
+                        self.robot_states[name].battery += 1
+                print "battery: ", self.robot_states[name].battery
                 self.maze.updateRobotStates(self.robot_states)
 
 if __name__ == "__main__":
