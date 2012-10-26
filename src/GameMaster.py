@@ -45,7 +45,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 10: #not self.gameFinished()
+        while i < 15: #not self.gameFinished()
             i += 1
             sleep(0.01)
             self.visualizer.showState()
@@ -66,7 +66,17 @@ class GameMaster(object):
                 if command == Command.DropStone:
                     self.robot_states[name].stones -= 1
                     if self.robot_states[name].stones > 0:
-                        self.maze.setStone(self.robot_states[name].pose)
+                        position = [self.robot_states[name].pose[0], self.robot_states[name].pose[1]]
+                        if self.robot_states[name].pose[2] == 0:
+                            position[1] += 1
+                        if self.robot_states[name].pose[2] == 2:
+                            position[1] -= 1
+                        if self.robot_states[name].pose[2] == 1:
+                            position[0] += 1
+                        if self.robot_states[name].pose[2] == 3:
+                            position[0] -= 1
+                        if self.maze.checkPositionFree(position) == True:
+                            self.maze.setStone(position)
                 if command == Command.MoveForward:
                     position = [self.robot_states[name].pose[0], self.robot_states[name].pose[1]]
                     if self.robot_states[name].pose[2] == 0:
@@ -77,7 +87,7 @@ class GameMaster(object):
                         position[0] -= 1
                     if self.robot_states[name].pose[2] == 3:
                         position[0] += 1
-                    if self.maze.checkNewPosition(position) == True:
+                    if self.maze.checkPositionFree(position) == True:
                         print "update robot position"
                         self.robot_states[name].pose[0] = position[0]
                         self.robot_states[name].pose[1] = position[1]

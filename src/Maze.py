@@ -13,6 +13,7 @@ class Maze(object):
     def __init__(self, filename):
         self._grid = Maze._loadGrid(filename)
         self._start_positions = []
+        self._stones = []
         self.robot_states = {}
         for y, row in enumerate(self._grid):
             for x, value in enumerate(row):
@@ -32,21 +33,40 @@ class Maze(object):
         data = {}
         
         #TODO orientierung berücksichtigen!
-        data[(0,1)] = self._grid[pose[0] + 1][pose[1]]
-        data[(0,-1)] = self._grid[pose[0] - 1][pose[1]]
-        data[(1,0)] = self._grid[pose[0]][pose[1]+1]
-        data[(-1,0)] = self._grid[pose[0]][pose[1]-1]
+        if pose[2] == 0:
+            data[(0,1)] = self._grid[pose[0] + 1][pose[1]]
+            data[(0,-1)] = self._grid[pose[0] - 1][pose[1]]
+            data[(1,0)] = self._grid[pose[0]][pose[1]+1]
+            data[(-1,0)] = self._grid[pose[0]][pose[1]-1]
+        elif pose[2] == 2:
+            data[(0,1)] = self._grid[pose[0] - 1][pose[1]]
+            data[(0,-1)] = self._grid[pose[0] + 1][pose[1]]
+            data[(1,0)] = self._grid[pose[0]][pose[1]-1]
+            data[(-1,0)] = self._grid[pose[0]][pose[1]+1]
+        elif pose[2] == 1:
+            data[(0,1)] = self._grid[pose[0] ][pose[1]+ 1]
+            data[(0,-1)] = self._grid[pose[0] ][pose[1]- 1]
+            data[(1,0)] = self._grid[pose[0]+1][pose[1]]
+            data[(-1,0)] = self._grid[pose[0]-1][pose[1]]
+        elif pose[2] == 3:
+            data[(0,1)] = self._grid[pose[0] ][pose[1] - 1]
+            data[(0,-1)] = self._grid[pose[0] ][pose[1]+ 1]
+            data[(1,0)] = self._grid[pose[0]-1][pose[1]]
+            data[(-1,0)] = self._grid[pose[0]+1][pose[1]]
+
+
         return data
     
-    def checkNewPosition(self, position):   # test if a new position is valid
+    def checkPositionFree(self, position):   # test if a new position is valid
         print self._grid[position[1]][position[0]]
         if self._grid[position[1]][position[0]] == 0:
             return True            
         else:
             return False
 
-    def setStone(self, pose):
-        pass
+    def setStone(self, position):
+        self._stones += [position]
+        self._grid[position[1]][position[0]] = 10
     
     def getGrid(self):
         return self._grid
@@ -59,7 +79,12 @@ class Maze(object):
         for name, state in self.robot_states.items():
             print "update state: ",state.pose
             self._grid[state.pose[1]][state.pose[0]] = state.id + state.pose[2]
-        
+        for index, position in enumerate(self._stones[:]):
+            self._grid[position[1]][position[0]] -= 1            
+            if self._grid[position[1]][position[0]] == 0:
+                self._stones.pop(index)
+                
+                
     def getStartPosition(self):
         Maze.start_index += 1
         print "setting start position",self._start_positions[Maze.start_index -1]
