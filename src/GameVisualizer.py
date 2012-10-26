@@ -19,10 +19,10 @@ class GameVisualizer(object):
 
     def showState(self):
         # show image window
-        inverted = GameVisualizer.invert(self._maze.getGrid())
-        im = Image.fromarray(array(inverted))
-        im = im.resize((im.size[0] * 20, im.size[1] * 20))
-        im.show()
+        #inverted = GameVisualizer.invert(self._maze.getGrid())
+        #im = Image.fromarray(array(inverted))
+        #im = im.resize((im.size[0] * 20, im.size[1] * 20))
+        #im.show()
 
         # print to console
         for row in self._maze.getGrid():
