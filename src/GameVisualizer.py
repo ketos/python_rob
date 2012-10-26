@@ -6,8 +6,11 @@ Created on Wed Oct 24 16:06:41 2012
 """
 
 class GameVisualizer(object):
-    FORMATTER = {0: ' ', 150: '1', 151: '2', 152: '3', 192: 'X', 255: '#'}
-
+    FORMATTER = {0: ' ', 150: '^', 151: '>', 152: 'v', 153: '<',
+                 154: '^', 155: '>', 156: 'v', 157: '<',
+                 158: '^', 159: '>', 160: 'v', 161: '<',
+                 192: 'X', 255: '#'}
+    #TODO add color to arrows
     def __init__(self, maze):
         self._maze = maze
         

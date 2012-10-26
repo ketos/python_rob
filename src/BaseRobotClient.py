@@ -14,7 +14,7 @@ class BaseRobotClient(object):
     def getNextCommand(self):
         pass
     
-    def setSensorDate(self, data):
+    def setSensorData(self, data):
         print "robot get data: ", data
         
     def setBumper(self):
