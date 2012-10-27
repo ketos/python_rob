@@ -23,6 +23,9 @@ class BaseRobotClient(object):
     def setGoal(self,goal):
         self.goal = goal
     
+    def setStartPose(self, pose):
+        self.start_pose = pose
+    
 if __name__ == "__main__":
     robot = BaseRobotClient()
     print Command.LeftTurn

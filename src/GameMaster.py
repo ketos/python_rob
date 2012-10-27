@@ -46,7 +46,8 @@ class GameMaster(object):
     def initGame(self):
         for name, robot in self.robot_clients.items():
             robot.setGoal(self.maze.getGoal())
-            robot.setLoadingStations(self.maze.getLoadingStations())
+            robot.setStartPose(self.robot_states[name].pose)
+            #TODO robot.setLoadingStations(self.maze.getLoadingStations())
 
     def gameFinished(self):
         goal = self.maze.getGoal()
@@ -105,8 +106,9 @@ class GameMaster(object):
 
 if __name__ == "__main__":
     master = GameMaster()
-    master.initGame()
+    
     #for name in sys.argv:
     #    master.addClient(name)
     master.addClient("TestClient")
+    master.initGame()    
     master.startGame()
