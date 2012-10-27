@@ -20,6 +20,8 @@ class BaseRobotClient(object):
         
     def setBumper(self):
         pass
+    def setGoal(self,goal):
+        self.goal = goal
     
 if __name__ == "__main__":
     robot = BaseRobotClient()

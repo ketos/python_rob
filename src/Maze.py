@@ -25,37 +25,24 @@ class Maze(object):
                     self._grid[y][x] = 0
                 if value >= 158 and value <= 161:
                     self._start_positions += [[158, x,y,value%4]]
-                    self._grid[y][x] = 0                
+                    self._grid[y][x] = 0    
+                if value == 192:
+                    self._goal = (y,x)
                     
         print self._start_positions
     
-    def getSensorData(self, pose):       # pose as (x,y,theta) tuple
+    def getSensorData(self, state):       # pose as (x,y,theta) tuple
         data = {}
-        
-        #TODO orientierung berücksichtigen!
-        if pose[2] == 0:
-            data[(0,1)] = self._grid[pose[0] + 1][pose[1]]
-            data[(0,-1)] = self._grid[pose[0] - 1][pose[1]]
-            data[(1,0)] = self._grid[pose[0]][pose[1]+1]
-            data[(-1,0)] = self._grid[pose[0]][pose[1]-1]
-        elif pose[2] == 2:
-            data[(0,1)] = self._grid[pose[0] - 1][pose[1]]
-            data[(0,-1)] = self._grid[pose[0] + 1][pose[1]]
-            data[(1,0)] = self._grid[pose[0]][pose[1]-1]
-            data[(-1,0)] = self._grid[pose[0]][pose[1]+1]
-        elif pose[2] == 1:
-            data[(0,1)] = self._grid[pose[0] ][pose[1]+ 1]
-            data[(0,-1)] = self._grid[pose[0] ][pose[1]- 1]
-            data[(1,0)] = self._grid[pose[0]+1][pose[1]]
-            data[(-1,0)] = self._grid[pose[0]-1][pose[1]]
-        elif pose[2] == 3:
-            data[(0,1)] = self._grid[pose[0] ][pose[1] - 1]
-            data[(0,-1)] = self._grid[pose[0] ][pose[1]+ 1]
-            data[(1,0)] = self._grid[pose[0]-1][pose[1]]
-            data[(-1,0)] = self._grid[pose[0]+1][pose[1]]
-
-
+        indicees = state.getIndicees()
+        #print "getSensorData: ",indicees
+        data["front"] = self._grid[indicees[0][1]][indicees[0][0]]
+        data["right"] = self._grid[indicees[1][1]][indicees[1][0]]
+        data["back"] = self._grid[indicees[2][1]][indicees[2][0]]
+        data["left"] = self._grid[indicees[3][1]][indicees[3][0]]
         return data
+        
+    def getGoal(self):
+        return self._goal
     
     def checkPositionFree(self, position):   # test if a new position is valid
         print self._grid[position[1]][position[0]]

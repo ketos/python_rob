@@ -8,10 +8,19 @@ from BaseRobotClient import *
 import random
 
 class TestClient(BaseRobotClient):
+
     def __init__(self):
         super(TestClient, self).__init__()
+        self.commands = [3,3,4]
+        self.index = 0
     def getNextCommand(self):
-        #return 4
+        """
+        cmd = self.commands[self.index]
+        self.index += 1
+        if self.index == len(self.commands):
+            self.index = 0
+        return cmd
+        """        
         return random.randrange(0, 5, 1)
     
 if __name__ == "__main__":

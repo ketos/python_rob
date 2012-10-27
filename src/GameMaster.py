@@ -18,7 +18,14 @@ class RobotState(object):
         self.battery = 100
         self.stones = 3
         self.sense = False
-
+    
+    def getIndicees(self):
+        indicees = [[self.pose[0], self.pose[1] - 1],
+                     [self.pose[0] + 1, self.pose[1]],
+                     [self.pose[0], self.pose[1] + 1],
+                     [self.pose[0] - 1, self.pose[1]]]
+        return indicees[self.pose[2]:] + indicees[:self.pose[2]]
+        
 class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
@@ -37,22 +44,28 @@ class GameMaster(object):
         self.robot_states[clientName].pose = start_position[1:]
 
     def initGame(self):
-        pass
+        for name, robot in self.robot_clients.items():
+            robot.setGoal(self.maze.getGoal())
+            robot.setLoadingStations(self.maze.getLoadingStations())
 
     def gameFinished(self):
+        goal = self.maze.getGoal()
+        for state in self.robot_states.values():
+            if goal[0] == state.pose[0] and goal[1] == state.pose[1]:
+                return True   
         return False
 
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 1000: #not self.gameFinished()
+        while not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.01)
             self.visualizer.showState()
             
             for name, robot in self.robot_clients.items():
                 if self.robot_states[name].sense == True:
-                    data = self.maze.getSensorData(self.robot_states[name].pose)
+                    data = self.maze.getSensorData(self.robot_states[name])
                     robot.setSensorData(data)
                     self.robot_states[name].sense = False
                 command = robot.getNextCommand()
@@ -70,29 +83,13 @@ class GameMaster(object):
                 if command == Command.DropStone:
                     self.robot_states[name].stones -= 1
                     if self.robot_states[name].stones > 0:
-                        position = [self.robot_states[name].pose[0], self.robot_states[name].pose[1]]
-                        if self.robot_states[name].pose[2] == 0:
-                            position[1] += 1
-                        if self.robot_states[name].pose[2] == 2:
-                            position[1] -= 1
-                        if self.robot_states[name].pose[2] == 1:
-                            position[0] -= 1
-                        if self.robot_states[name].pose[2] == 3:
-                            position[0] += 1
+                        position = self.robot_states[name].getIndicees()[2]
                         if self.maze.checkPositionFree(position) == True:
                             self.maze.setStone(position)
                 if command == Command.MoveForward:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
-                        position = [self.robot_states[name].pose[0], self.robot_states[name].pose[1]]
-                        if self.robot_states[name].pose[2] == 0:
-                            position[1] -= 1
-                        if self.robot_states[name].pose[2] == 2:
-                            position[1] += 1
-                        if self.robot_states[name].pose[2] == 1:
-                            position[0] += 1
-                        if self.robot_states[name].pose[2] == 3:
-                            position[0] -= 1
+                        position = self.robot_states[name].getIndicees()[0]
                         if self.maze.checkPositionFree(position) == True:
                             print "update robot position"
                             self.robot_states[name].pose[0] = position[0]
@@ -107,9 +104,6 @@ class GameMaster(object):
                 self.maze.updateRobotStates(self.robot_states)
 
 if __name__ == "__main__":
-    #hier weiter startposition passt nicht es wird Ziel ersetzt
-    #und es wird nicht nachher wieder auf 0 gesetzt
-    #print '\033[1;31mRed like Radish\033[1;m'
     master = GameMaster()
     master.initGame()
     #for name in sys.argv:
