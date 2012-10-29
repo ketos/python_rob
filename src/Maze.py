@@ -14,11 +14,23 @@ def neighbors(p):
     for t in neighbors:
         yield t
         
+class Stone(object):
+    def __init__(self,counter, position):
+        self.counter = counter
+        self.position = position        
+
+class Bomb(object):
+    def __init__(self,counter, position):
+        self.counter = counter
+        self.position = position    
+        
 class Maze(object):
     start_index = 0
     def __init__(self, filename):
         self._grid = Maze._loadGrid(filename)
         self._start_positions = []
+        self._loading_stations = []
+        self._portals = []
         self._stones = []
         self._bombs = []
         self.robot_states = {}
@@ -35,6 +47,11 @@ class Maze(object):
                     self._grid[y][x] = 0    
                 if value == 192:
                     self._goal = (y,x)
+                if value == 128:
+                    self._loading_stations += [(y,x)]
+                if value == 129:
+                    self._portals += [(y,x)]
+                    
                     
         print self._start_positions
     
@@ -58,12 +75,14 @@ class Maze(object):
             return False
 
     def setStone(self, position):
-        self._stones += [position]
-        self._grid[position[1]][position[0]] = 10
+        counter = 10
+        self._stones += [Stone(counter,position)]
+        #self._grid[position[1]][position[0]] = 10
         
     def setBomb(self, position):
-        self._bombs += [position]
-        self._grid[position[1]][position[0]] = 3
+        counter = 3
+        self._bombs += [Bomb(counter, position)]
+        #self._grid[position[1]][position[0]] = 3
     
     
     def getGrid(self):
@@ -71,26 +90,36 @@ class Maze(object):
         
     def updateRobotStates(self, robot_states):
         for name, state in self.robot_states.items():
-            self._grid[state.pose[1]][state.pose[0]] = 0
+            self._grid[state.position[1]][state.position[0]] = 0
             #print "setting ",state.pose," to zero"
         self.robot_states = deepcopy(robot_states)
+        for position in self._loading_stations:
+            self._grid[position[1]][position[0]] = 128 
+        for y,x in self._portals:
+            self._grid[y][x] = 129
+            
         for name, state in self.robot_states.items():
             #print "update state: ",state.pose
-            self._grid[state.pose[1]][state.pose[0]] = state.id + state.pose[2]
-        for index, position in enumerate(self._stones[:]):
-            self._grid[position[1]][position[0]] -= 1            
-            if self._grid[position[1]][position[0]] == 0:
+            self._grid[state.position[1]][state.position[0]] = state.id + state.orientation
+
+    def updateRound(self, robot_states):
+        for index, stone in reversed(list(enumerate(self._stones[:]))):
+            stone.counter -= 1
+            self._grid[stone.position[1]][stone.position[0]] = stone.counter            
+            if stone.counter == 0:
                 self._stones.pop(index)
-        for index, position in enumerate(self._bombs[:]):
-            self._grid[position[1]][position[0]] -= 1            
-            if self._grid[position[1]][position[0]] == 0:
-                for x,y in neighbors(position):
+        for index, bomb in reversed(list(enumerate(self._bombs[:]))):
+            bomb.counter -= 1            
+            self._grid[bomb.position[1]][bomb.position[0]] = bomb.counter
+            if bomb.counter == 0:
+                for x,y in neighbors(bomb.position):
                     self._grid[y][x] = 0
                     for robot in robot_states.values():
-                        if robot.pose[0] == x and robot.pose[1] == y:
+                        if robot.position[0] == x and robot.position[1] == y:
                             robot.battery = 0
-                            self._grid[y][x] = state.id + state.pose[2]
-                self._bombs.pop(index)                
+                            self._grid[y][x] = robot.id + robot.orientation
+                print self._bombs, index
+                self._bombs.pop(index)
                 
     def getStartPosition(self):
         Maze.start_index += 1

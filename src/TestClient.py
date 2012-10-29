@@ -23,7 +23,7 @@ class TestClient(BaseRobotClient):
             self.index = 0
         return cmd
         """        
-        return random.randrange(0, 6, 1)
+        return random.randrange(0, 7, 1)
     
 if __name__ == "__main__":
     robot = TestClient()

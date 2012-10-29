@@ -14,7 +14,8 @@ from GameVisualizer import GameVisualizer
 class RobotState(object):
     def __init__(self):
         self.id = -1
-        self.pose = [0, 0, 0]
+        self.position = [0, 0]
+        self.orientation = 0
         self.battery = 100
         self.stones = 3
         self.bombs = 3
@@ -30,11 +31,11 @@ class RobotState(object):
         2: h
         3: l
         """
-        indicees = [[self.pose[0], self.pose[1] - 1],
-                     [self.pose[0] + 1, self.pose[1]],
-                     [self.pose[0], self.pose[1] + 1],
-                     [self.pose[0] - 1, self.pose[1]]]
-        return indicees[self.pose[2]:] + indicees[:self.pose[2]]
+        indicees = [[self.position[0], self.position[1] - 1],
+                     [self.position[0] + 1, self.position[1]],
+                     [self.position[0], self.position[1] + 1],
+                     [self.position[0] - 1, self.position[1]]]
+        return indicees[self.orientation:] + indicees[:self.orientation]
         
 class GameMaster(object):
     def __init__(self):
@@ -52,12 +53,13 @@ class GameMaster(object):
         self.robot_states[clientName] = RobotState()
         start_position = self.maze.getStartPosition()
         self.robot_states[clientName].id = start_position[0]        
-        self.robot_states[clientName].pose = start_position[1:]
+        self.robot_states[clientName].position = start_position[1:3]
+        self.robot_states[clientName].orientation = start_position[-1]
 
     def initGame(self):
         for name, robot in self.robot_clients.items():
             robot.setGoal(self.maze.getGoal())
-            robot.setStartPose(self.robot_states[name].pose)
+            robot.setStartPose(self.robot_states[name].position,self.robot_states[name].orientation )
             #TODO robot.setLoadingStations(self.maze.getLoadingStations())
 
     def gameFinished(self):
@@ -91,11 +93,11 @@ class GameMaster(object):
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
-                        self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] + 1) % 4
+                        self.robot_states[name].orientation = (self.robot_states[name].orientation + 1) % 4
                 if command == Command.LeftTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
-                        self.robot_states[name].pose[2] = (self.robot_states[name].pose[2] - 1) % 4
+                        self.robot_states[name].orientation = (self.robot_states[name].orientation - 1) % 4
                 if command == Command.Sense:
                     self.robot_states[name].sense = True
                 if command == Command.DropStone:
@@ -116,8 +118,7 @@ class GameMaster(object):
                         position = self.robot_states[name].getIndicees()[0]
                         if self.maze.checkPositionFree(position) == True:
                             print "update robot position"
-                            self.robot_states[name].pose[0] = position[0]
-                            self.robot_states[name].pose[1] = position[1]
+                            self.robot_states[name].position = position[:]
                         else:
                             self.robot_states[name].bumper = True
                 
@@ -125,6 +126,7 @@ class GameMaster(object):
                     if self.robot_states[name].battery < 100:
                         self.robot_states[name].battery += 1
                 self.maze.updateRobotStates(self.robot_states)
+            self.maze.updateRound(self.robot_states)
 
 if __name__ == "__main__":
     master = GameMaster()
