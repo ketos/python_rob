@@ -26,11 +26,11 @@ class GameVisualizer(object):
         #im = im.resize((im.size[0] * 20, im.size[1] * 20))
         #im.show()
 
+        sleep(0.05)
         # print to console
         print '\033[H\033[J'
         for row in self._maze.getGrid():
             print ' '.join([GameVisualizer.FORMATTER[i] for i in row])
-        sleep(0.2)
 
     @staticmethod
     def invert(image):

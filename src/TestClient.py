@@ -11,9 +11,10 @@ class TestClient(BaseRobotClient):
 
     def __init__(self):
         super(TestClient, self).__init__()
-        self.commands = [3,3,4]
+        self.commands = [3, 3, 4]
         self.index = 0
-    def getNextCommand(self):
+
+    def getNextCommand(self, sensor_data, bumper):
         """
         cmd = self.commands[self.index]
         self.index += 1

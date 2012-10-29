@@ -18,8 +18,17 @@ class RobotState(object):
         self.battery = 100
         self.stones = 3
         self.sense = False
+        self.bumper = False
     
     def getIndicees(self):
+        """
+        shifts robot position
+
+        0: vorne
+        1: r
+        2: h
+        3: l
+        """
         indicees = [[self.pose[0], self.pose[1] - 1],
                      [self.pose[0] + 1, self.pose[1]],
                      [self.pose[0], self.pose[1] + 1],
@@ -65,12 +74,16 @@ class GameMaster(object):
             self.visualizer.showState()
             
             for name, robot in self.robot_clients.items():
+                sensor_data = None
                 if self.robot_states[name].sense == True:
-                    data = self.maze.getSensorData(self.robot_states[name])
-                    robot.setSensorData(data)
+                    sensor_data = self.maze.getSensorData(self.robot_states[name])
                     self.robot_states[name].sense = False
-                command = robot.getNextCommand()
+                    
+                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper)
                 print "command:", Command.names[command]
+
+                self.robot_states[name].bumper = False
+                
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
@@ -96,8 +109,8 @@ class GameMaster(object):
                             self.robot_states[name].pose[0] = position[0]
                             self.robot_states[name].pose[1] = position[1]
                         else:
-                            print "bumper"
-                            self.robot_clients[name].setBumper()
+                            self.robot_states[name].bumper = True
+                
                 if command == Command.Stay:
                     if self.robot_states[name].battery < 100:
                         self.robot_states[name].battery += 1
