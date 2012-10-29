@@ -7,6 +7,7 @@ Created on Wed Oct 24 16:06:41 2012
 
 import Image
 from numpy import array
+from time import sleep
 
 class GameVisualizer(object):
     FORMATTER = {0: ' ', 1:'1',2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',
@@ -26,8 +27,10 @@ class GameVisualizer(object):
         #im.show()
 
         # print to console
+        print '\033[H\033[J'
         for row in self._maze.getGrid():
             print ' '.join([GameVisualizer.FORMATTER[i] for i in row])
+        sleep(0.2)
 
     @staticmethod
     def invert(image):
