@@ -17,6 +17,7 @@ class RobotState(object):
         self.pose = [0, 0, 0]
         self.battery = 100
         self.stones = 3
+        self.bombs = 3
         self.sense = False
         self.bumper = False
     
@@ -45,7 +46,8 @@ class GameMaster(object):
     def addClient(self, clientName):
         print clientName
         module = __import__(clientName)
-        print dir(module)
+        if clientName in self.robot_clients.keys():
+            clientName = clientName + str(len(self.robot_clients))
         self.robot_clients[clientName] = module.TestClient()
         self.robot_states[clientName] = RobotState()
         start_position = self.maze.getStartPosition()
@@ -68,7 +70,8 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while not self.gameFinished(): #i < 10: #
+        while i < 100: #
+        #while not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.01)
             self.visualizer.showState()
@@ -80,7 +83,8 @@ class GameMaster(object):
                     self.robot_states[name].sense = False
                     
                 command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper)
-                print "command:", Command.names[command]
+                print name, "command:", Command.names[command]
+                print "battery: ", self.robot_states[name].battery
 
                 self.robot_states[name].bumper = False
                 
@@ -95,11 +99,17 @@ class GameMaster(object):
                 if command == Command.Sense:
                     self.robot_states[name].sense = True
                 if command == Command.DropStone:
-                    self.robot_states[name].stones -= 1
                     if self.robot_states[name].stones > 0:
                         position = self.robot_states[name].getIndicees()[2]
                         if self.maze.checkPositionFree(position) == True:
+                            self.robot_states[name].stones -= 1
                             self.maze.setStone(position)
+                if command == Command.DropBomb:  
+                    if self.robot_states[name].bombs > 0:
+                        position = self.robot_states[name].getIndicees()[2]
+                        if self.maze.checkPositionFree(position) == True:
+                            self.robot_states[name].bombs -= 1                            
+                            self.maze.setBomb(position)                            
                 if command == Command.MoveForward:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
@@ -114,7 +124,6 @@ class GameMaster(object):
                 if command == Command.Stay:
                     if self.robot_states[name].battery < 100:
                         self.robot_states[name].battery += 1
-                print "battery: ", self.robot_states[name].battery
                 self.maze.updateRobotStates(self.robot_states)
 
 if __name__ == "__main__":
@@ -122,6 +131,8 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
+    master.addClient("TestClient")
+    master.addClient("TestClient")
     master.addClient("TestClient")
     master.initGame()    
     master.startGame()

@@ -5,8 +5,9 @@ Created on Wed Oct 24 15:24:48 2012
 @author: DFKI-MARION-2
 """
 class Command:
-    LeftTurn, RightTurn,Stay, MoveForward, Sense, DropStone = range(6)
-    names = ["LeftTurn", "RightTurn", "Stay", "MoveForward", "Sense", "DropStone"]
+    LeftTurn, RightTurn,Stay, MoveForward, Sense, DropStone, DropBomb = range(7)
+    names = ["LeftTurn", "RightTurn", "Stay", "MoveForward", "Sense", 
+             "DropStone", "DropBomb"]
 
 class BaseRobotClient(object):
     def __init__(self):

@@ -15,6 +15,7 @@ class TestClient(BaseRobotClient):
         self.index = 0
 
     def getNextCommand(self, sensor_data, bumper):
+        #print sensor_data, bumper
         """
         cmd = self.commands[self.index]
         self.index += 1
@@ -22,7 +23,7 @@ class TestClient(BaseRobotClient):
             self.index = 0
         return cmd
         """        
-        return random.randrange(0, 5, 1)
+        return random.randrange(0, 6, 1)
     
 if __name__ == "__main__":
     robot = TestClient()

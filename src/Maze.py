@@ -7,13 +7,20 @@ Created on Wed Oct 24 16:24:15 2012
 
 import sys
 from copy import deepcopy
-    
+
+def neighbors(p):
+    neighbors = [(p[0], p[1] - 1),(p[0] + 1, p[1]),
+                 (p[0], p[1] + 1),(p[0] - 1, p[1])]
+    for t in neighbors:
+        yield t
+        
 class Maze(object):
     start_index = 0
     def __init__(self, filename):
         self._grid = Maze._loadGrid(filename)
         self._start_positions = []
         self._stones = []
+        self._bombs = []
         self.robot_states = {}
         for y, row in enumerate(self._grid):
             for x, value in enumerate(row):
@@ -45,7 +52,6 @@ class Maze(object):
         return self._goal
     
     def checkPositionFree(self, position):   # test if a new position is valid
-        print self._grid[position[1]][position[0]]
         if self._grid[position[1]][position[0]] == 0:
             return True            
         else:
@@ -54,6 +60,11 @@ class Maze(object):
     def setStone(self, position):
         self._stones += [position]
         self._grid[position[1]][position[0]] = 10
+        
+    def setBomb(self, position):
+        self._bombs += [position]
+        self._grid[position[1]][position[0]] = 3
+    
     
     def getGrid(self):
         return self._grid
@@ -61,16 +72,25 @@ class Maze(object):
     def updateRobotStates(self, robot_states):
         for name, state in self.robot_states.items():
             self._grid[state.pose[1]][state.pose[0]] = 0
-            print "setting ",state.pose," to zero"
+            #print "setting ",state.pose," to zero"
         self.robot_states = deepcopy(robot_states)
         for name, state in self.robot_states.items():
-            print "update state: ",state.pose
+            #print "update state: ",state.pose
             self._grid[state.pose[1]][state.pose[0]] = state.id + state.pose[2]
         for index, position in enumerate(self._stones[:]):
             self._grid[position[1]][position[0]] -= 1            
             if self._grid[position[1]][position[0]] == 0:
                 self._stones.pop(index)
-                
+        for index, position in enumerate(self._bombs[:]):
+            self._grid[position[1]][position[0]] -= 1            
+            if self._grid[position[1]][position[0]] == 0:
+                for x,y in neighbors(position):
+                    self._grid[y][x] = 0
+                    for robot in robot_states.values():
+                        if robot.pose[0] == x and robot.pose[1] == y:
+                            robot.battery = 0
+                            self._grid[y][x] = state.id + state.pose[2]
+                self._bombs.pop(index)                
                 
     def getStartPosition(self):
         Maze.start_index += 1
