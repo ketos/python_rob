@@ -9,7 +9,9 @@ from time import sleep
 
 from Maze import *
 from BaseRobotClient import *
-from GameVisualizer import GameVisualizer
+from GameVisualizerRawTerminal import GameVisualizerRawTerminal
+from GameVisualizerColorTerminal import GameVisualizerColorTerminal
+from GameVisualizerImage import GameVisualizerImage
 
 class RobotState(object):
     def __init__(self):
@@ -40,7 +42,9 @@ class GameMaster(object):
         self.robot_clients = {}
         self.robot_states = {}
         self.maze = Maze('../data/maze1.pgm')
-        self.visualizer = GameVisualizer(self.maze)
+        # don't use: self.visualizer = GameVisualizerImage(self.maze)
+        # self.visualizer = GameVisualizerRawTerminal(self.maze)
+        self.visualizer = GameVisualizerColorTerminal(self.maze)
 
     def addClient(self, clientName):
         print clientName
@@ -70,7 +74,7 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.01)
+            sleep(0.2)
             self.visualizer.showState()
             
             for name, robot in self.robot_clients.items():
