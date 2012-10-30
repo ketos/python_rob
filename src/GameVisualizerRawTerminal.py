@@ -17,4 +17,4 @@ class GameVisualizerRawTerminal(object):
 
     def showState(self):
         for row in self._maze.getGrid():
-          print ' '.join([GameVisualizerRawTerminal.FORMATTER[i] for i in row])
+            print ' '.join([GameVisualizerRawTerminal.FORMATTER[i] for i in row])
