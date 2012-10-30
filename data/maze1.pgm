@@ -6,7 +6,7 @@ P2
 #   1..127 = obstacle (incl. countdown, i.e. 14 = obstacle which will disappear in 14 rounds)
 #      128 = charging station
 #      129 = portal
-# 150..159 = start position of robot 1..10
+# 150, 154, 158 = start position of robot 1..3
 #      192 = goal
 # 200..209 = robot number 1..10
 #      255 = wall

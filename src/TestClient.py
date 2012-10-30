@@ -24,7 +24,3 @@ class TestClient(BaseRobotClient):
         return cmd
         """        
         return random.randrange(0, 7, 1)
-    
-if __name__ == "__main__":
-    robot = TestClient()
-    robot.getNextCommand()

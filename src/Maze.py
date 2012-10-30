@@ -69,7 +69,12 @@ class Maze(object):
         return self._goal
     
     def checkPositionFree(self, position):   # test if a new position is valid
-        if self._grid[position[1]][position[0]] == 0:
+
+        #TODO check if position inside maze (bombs...)    
+    
+        if self._grid[position[1]][position[0]] == 0 or \
+           self._grid[position[1]][position[0]] == 128 or \
+           self._grid[position[1]][position[0]] == 129:
             return True            
         else:
             return False
@@ -94,7 +99,8 @@ class Maze(object):
             #print "setting ",state.pose," to zero"
         self.robot_states = deepcopy(robot_states)
         for position in self._loading_stations:
-            self._grid[position[1]][position[0]] = 128 
+            print position
+            self._grid[position[0]][position[1]] = 128 
         for y,x in self._portals:
             self._grid[y][x] = 129
             
@@ -125,7 +131,8 @@ class Maze(object):
         Maze.start_index += 1
         print "setting start position",self._start_positions[Maze.start_index -1]
         return self._start_positions[Maze.start_index -1]
-    
+    def getLoadingStations(self):
+        return self._loading_stations
     @staticmethod
     def _loadGrid(filename):
         items = []

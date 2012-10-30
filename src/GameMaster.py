@@ -9,7 +9,9 @@ from time import sleep
 
 from Maze import *
 from BaseRobotClient import *
-from GameVisualizer import GameVisualizer
+from GameVisualizerRawTerminal import GameVisualizerRawTerminal
+from GameVisualizerColorTerminal import GameVisualizerColorTerminal
+from GameVisualizerImage import GameVisualizerImage
 
 class RobotState(object):
     def __init__(self):
@@ -42,7 +44,9 @@ class GameMaster(object):
         self.robot_clients = {}
         self.robot_states = {}
         self.maze = Maze('../data/maze1.pgm')
-        self.visualizer = GameVisualizer(self.maze)
+        # don't use: self.visualizer = GameVisualizerImage(self.maze)
+        self.visualizer = GameVisualizerRawTerminal(self.maze)
+        # self.visualizer = GameVisualizerColorTerminal(self.maze)
 
     def addClient(self, clientName):
         print clientName
@@ -124,7 +128,12 @@ class GameMaster(object):
                 
                 if command == Command.Stay:
                     if self.robot_states[name].battery < 100:
-                        self.robot_states[name].battery += 1
+                        if self.robot_states[name].position in self.maze.getLoadingStations():
+                            self.robot_states[name].battery += 30
+                        else:
+                            self.robot_states[name].battery += 1
+                        if self.robot_states[name].battery > 100:
+                            self.robot_states[name].battery = 100
                 self.maze.updateRobotStates(self.robot_states)
             self.maze.updateRound(self.robot_states)
 
