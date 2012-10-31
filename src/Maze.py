@@ -2,7 +2,7 @@
 """
 Created on Wed Oct 24 16:24:15 2012
 
-@author: DFKI-MARION-2
+@author: Martin Günther
 """
 
 import sys
@@ -37,23 +37,21 @@ class Maze(object):
         for y, row in enumerate(self._grid):
             for x, value in enumerate(row):
                 if value >= 150 and value <= 153:
-                    self._start_positions += [[150, x,y,value%4]]
+                    self._start_positions += [[150, x,y,(value-150)%4]]
                     self._grid[y][x] = 0
                 if value >= 154 and value <= 157:
-                    self._start_positions += [[154, x,y,value%4]]
+                    self._start_positions += [[154, x,y,(value-150)%4]]
                     self._grid[y][x] = 0
                 if value >= 158 and value <= 161:
-                    self._start_positions += [[158, x,y,value%4]]
+                    self._start_positions += [[158, x,y,(value-150)%4]]
                     self._grid[y][x] = 0    
                 if value == 192:
-                    self._goal = (y,x)
+                    self._goal = [x,y]
                 if value == 128:
-                    self._loading_stations += [(y,x)]
+                    self._loading_stations += [[x,y]]
                 if value == 129:
-                    self._portals += [(y,x)]
-                    
-                    
-        print self._start_positions
+                    self._portals += [[x,y]]
+
     
     def getSensorData(self, state):       # pose as (x,y,theta) tuple
         data = {}
@@ -70,7 +68,10 @@ class Maze(object):
     
     def checkPositionFree(self, position):   # test if a new position is valid
 
-        #TODO check if position inside maze (bombs...)    
+        #TODO check if position inside maze (bombs...) 
+        if position[1] < 0 or position[1] > len(self._grid) or \
+           position[0] < 0 or position[1] > len(self._grid[0]):
+               return False
     
         if self._grid[position[1]][position[0]] == 0 or \
            self._grid[position[1]][position[0]] == 128 or \
@@ -78,6 +79,19 @@ class Maze(object):
             return True            
         else:
             return False
+    
+    def checkPortal(self, position):
+        return position in self._portals
+    def getFreePortal(self, robot_states):
+        #TODO random        
+        for portal in self._portals:
+            free = True
+            for name, state in robot_states.items():
+                if state.position == portal:
+                    free = False
+            if free:
+                return portal 
+        return None
 
     def setStone(self, position):
         counter = 10
@@ -98,10 +112,9 @@ class Maze(object):
             self._grid[state.position[1]][state.position[0]] = 0
             #print "setting ",state.pose," to zero"
         self.robot_states = deepcopy(robot_states)
-        for position in self._loading_stations:
-            print position
-            self._grid[position[0]][position[1]] = 128 
-        for y,x in self._portals:
+        for x,y in self._loading_stations:
+            self._grid[y][x] = 128 
+        for x,y in self._portals:
             self._grid[y][x] = 129
             
         for name, state in self.robot_states.items():
@@ -124,7 +137,6 @@ class Maze(object):
                         if robot.position[0] == x and robot.position[1] == y:
                             robot.battery = 0
                             self._grid[y][x] = robot.id + robot.orientation
-                print self._bombs, index
                 self._bombs.pop(index)
                 
     def getStartPosition(self):
@@ -133,6 +145,10 @@ class Maze(object):
         return self._start_positions[Maze.start_index -1]
     def getLoadingStations(self):
         return self._loading_stations
+    def getPortals(self):
+        return self._portals
+        
+    
     @staticmethod
     def _loadGrid(filename):
         items = []

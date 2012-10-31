@@ -2,16 +2,17 @@
 """
 Created on Wed Oct 24 13:57:26 2012
 
-@author: DFKI-MARION-2
+@author: Stefan Stiene
 """
 import sys
+import math
 from time import sleep
 
 from Maze import *
 from BaseRobotClient import *
 from GameVisualizerRawTerminal import GameVisualizerRawTerminal
-from GameVisualizerColorTerminal import GameVisualizerColorTerminal
-from GameVisualizerImage import GameVisualizerImage
+#from GameVisualizerColorTerminal import GameVisualizerColorTerminal
+#from GameVisualizerImage import GameVisualizerImage
 
 class RobotState(object):
     def __init__(self):
@@ -23,10 +24,11 @@ class RobotState(object):
         self.bombs = 3
         self.sense = False
         self.bumper = False
+        self.teleported = False
     
     def getIndicees(self):
         """
-        shifts robot position
+        returns the indecees in the maze around the robot position
 
         0: vorne
         1: r
@@ -61,39 +63,50 @@ class GameMaster(object):
         self.robot_states[clientName].orientation = start_position[-1]
 
     def initGame(self):
-        for name, robot in self.robot_clients.items():
-            robot.setGoal(self.maze.getGoal())
-            robot.setStartPose(self.robot_states[name].position,self.robot_states[name].orientation )
-            #TODO robot.setLoadingStations(self.maze.getLoadingStations())
+        pass
 
     def gameFinished(self):
         goal = self.maze.getGoal()
         for state in self.robot_states.values():
-            if goal[0] == state.pose[0] and goal[1] == state.pose[1]:
+            if goal == state.position:
                 return True   
         return False
-
+    
+    def getCompass(self,robot_state):
+        goal = self.maze.getGoal()
+        position = robot_state.position
+        angle = math.atan2( goal[0] - position[1] , goal[1] - position[0]) * 180.0 / math.pi + 90.0;
+        direction = angle / 45.0 - (robot_state.orientation*2)
+        if direction < 0:
+            direction += 8
+        return round(direction)
+        
+        
+        
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 100: #
-        #while not self.gameFinished(): #i < 10: #
+        while i < 1000 and not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.01)
+            sleep(0.5)
             self.visualizer.showState()
-            
+            #a = raw_input()
+            print "round",i
             for name, robot in self.robot_clients.items():
                 sensor_data = None
                 if self.robot_states[name].sense == True:
                     sensor_data = self.maze.getSensorData(self.robot_states[name])
+                    sensor_data["battery"] = self.robot_states[name].battery
+                    sensor_data["stones"] = self.robot_states[name].stones
+                    sensor_data["bombs"] = self.robot_states[name].bombs
                     self.robot_states[name].sense = False
-                    
-                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper)
+                compass = self.getCompass(self.robot_states[name])
+                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 
                 self.robot_states[name].bumper = False
-                
+                self.robot_states[name].teleported = False
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
                         self.robot_states[name].battery -= 1
@@ -121,8 +134,12 @@ class GameMaster(object):
                         self.robot_states[name].battery -= 1
                         position = self.robot_states[name].getIndicees()[0]
                         if self.maze.checkPositionFree(position) == True:
-                            print "update robot position"
                             self.robot_states[name].position = position[:]
+                            if self.maze.checkPortal(position) == True:                               
+                                newPosition = self.maze.getFreePortal(self.robot_states)
+                                if newPosition != None:
+                                    self.robot_states[name].position = newPosition[:]
+                                    self.robot_states[name].teleported = True
                         else:
                             self.robot_states[name].bumper = True
                 
