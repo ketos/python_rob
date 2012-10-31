@@ -1,7 +1,1 @@
-- teleporter (sensor data!)
 
-- bomben legen (von 3 runter, bei 0 alle 4 nachbarn batterie leer, alle wände weg)
-
-- testen mit 3 clients
-
-- set goal/set start pose --> kompass?
