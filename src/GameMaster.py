@@ -55,7 +55,7 @@ class GameMaster(object):
         module = __import__(clientName)
         if clientName in self.robot_clients.keys():
             clientName = clientName + str(len(self.robot_clients))
-        self.robot_clients[clientName] = module.TestClient()
+        self.robot_clients[clientName] = module.robot_team2()
         self.robot_states[clientName] = RobotState()
         start_position = self.maze.getStartPosition()
         self.robot_states[clientName].id = start_position[0]        
@@ -86,7 +86,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 1000 and not self.gameFinished(): #i < 10: #
+        while i < 130 and not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.5)
             self.visualizer.showState()
@@ -109,11 +109,11 @@ class GameMaster(object):
                 self.robot_states[name].teleported = False
                 if command == Command.RightTurn:
                     if self.robot_states[name].battery > 0:
-                        self.robot_states[name].battery -= 1
+                        #self.robot_states[name].battery -= 1
                         self.robot_states[name].orientation = (self.robot_states[name].orientation + 1) % 4
                 if command == Command.LeftTurn:
                     if self.robot_states[name].battery > 0:
-                        self.robot_states[name].battery -= 1
+                        #self.robot_states[name].battery -= 1
                         self.robot_states[name].orientation = (self.robot_states[name].orientation - 1) % 4
                 if command == Command.Sense:
                     self.robot_states[name].sense = True
@@ -131,7 +131,7 @@ class GameMaster(object):
                             self.maze.setBomb(position)                            
                 if command == Command.MoveForward:
                     if self.robot_states[name].battery > 0:
-                        self.robot_states[name].battery -= 1
+                        #self.robot_states[name].battery -= 1
                         position = self.robot_states[name].getIndicees()[0]
                         if self.maze.checkPositionFree(position) == True:
                             self.robot_states[name].position = position[:]
@@ -159,8 +159,8 @@ if __name__ == "__main__":
     
     #for name in sys.argv:
     #    master.addClient(name)
-    master.addClient("TestClient")
-    master.addClient("TestClient")
-    master.addClient("TestClient")
+    master.addClient("robot_team2")
+    #master.addClient("TestClient")
+    #master.addClient("TestClient")
     master.initGame()    
     master.startGame()

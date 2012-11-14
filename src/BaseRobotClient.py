@@ -5,7 +5,7 @@ Created on Wed Oct 24 15:24:48 2012
 @author: Stefan Stiene
 """
 class Command:
-    LeftTurn, RightTurn,Stay, MoveForward, Sense, DropStone, DropBomb = range(7)
+    LeftTurn, RightTurn, Stay, MoveForward, Sense, DropStone, DropBomb = range(7)
     names = ["LeftTurn", "RightTurn", "Stay", "MoveForward", "Sense", 
              "DropStone", "DropBomb"]
 
