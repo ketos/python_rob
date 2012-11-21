@@ -10,7 +10,8 @@ from time import sleep
 
 from Maze import *
 from BaseRobotClient import *
-from GameVisualizerRawTerminal import GameVisualizerRawTerminal
+#from GameVisualizerMatplotlib import GameVisualizerMatplotlib as GameVisualizer
+from GameVisualizerRawTerminal import GameVisualizerRawTerminal as GameVisualizer
 #from GameVisualizerColorTerminal import GameVisualizerColorTerminal
 #from GameVisualizerImage import GameVisualizerImage
 
@@ -47,15 +48,15 @@ class GameMaster(object):
         self.robot_states = {}
         self.maze = Maze('../data/maze1.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
-        self.visualizer = GameVisualizerRawTerminal(self.maze)
-        # self.visualizer = GameVisualizerColorTerminal(self.maze)
+        self.visualizer = GameVisualizer(self.maze)
+        #self.visualizer = GameVisualizerRawTerminal(self.maze)
 
     def addClient(self, clientName):
         print clientName
         module = __import__(clientName)
         if clientName in self.robot_clients.keys():
             clientName = clientName + str(len(self.robot_clients))
-        self.robot_clients[clientName] = module.TestClient()
+        self.robot_clients[clientName] = module.TestClient()   # TODO get class name 
         self.robot_states[clientName] = RobotState()
         start_position = self.maze.getStartPosition()
         self.robot_states[clientName].id = start_position[0]        
@@ -75,11 +76,11 @@ class GameMaster(object):
     def getCompass(self,robot_state):
         goal = self.maze.getGoal()
         position = robot_state.position
-        angle = math.atan2( goal[0] - position[1] , goal[1] - position[0]) * 180.0 / math.pi + 90.0;
-        direction = angle / 45.0 - (robot_state.orientation*2)
-        if direction < 0:
-            direction += 8
-        return round(direction)
+        angle = math.atan2( goal[1] - position[1] , goal[0] - position[0]) * 180.0 / math.pi + 90;
+        compass = round(angle/45) - (robot_state.orientation * 2)
+        if compass < 0:
+            compass += 8
+        return compass
         
         
         
@@ -88,7 +89,7 @@ class GameMaster(object):
         self.maze.updateRobotStates(self.robot_states)
         while i < 1000 and not self.gameFinished(): #i < 10: #
             i += 1
-            sleep(0.5)
+            sleep(0.05)
             self.visualizer.showState()
             #a = raw_input()
             print "round",i
@@ -101,7 +102,10 @@ class GameMaster(object):
                     sensor_data["bombs"] = self.robot_states[name].bombs
                     self.robot_states[name].sense = False
                 compass = self.getCompass(self.robot_states[name])
-                command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
+                try:
+                    command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
+                except:
+                    print "Error in robot",name,"continue" 
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 
