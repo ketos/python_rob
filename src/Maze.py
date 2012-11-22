@@ -51,34 +51,44 @@ class Maze(object):
                     self._loading_stations += [[x,y]]
                 if value == 129:
                     self._portals += [[x,y]]
-
-    
+ 
     def getSensorData(self, state):       # pose as (x,y,theta) tuple
         data = {}
         indicees = state.getIndicees()
         #print "getSensorData: ",indicees
-        data["front"] = self._grid[indicees[0][1]][indicees[0][0]]
-        data["right"] = self._grid[indicees[1][1]][indicees[1][0]]
-        data["back"] = self._grid[indicees[2][1]][indicees[2][0]]
-        data["left"] = self._grid[indicees[3][1]][indicees[3][0]]
+        try:
+            data["front"] = self._grid[indicees[0][1]][indicees[0][0]]
+        except IndexError:
+            data["front"] = -1
+        try:
+            data["right"] = self._grid[indicees[1][1]][indicees[1][0]]
+        except IndexError:
+            data["right"] = -1
+        try:
+            data["back"] = self._grid[indicees[2][1]][indicees[2][0]]
+        except IndexError:
+            data["back"] = -1
+        try:
+            data["left"] = self._grid[indicees[3][1]][indicees[3][0]]
+        except IndexError:
+            data["left"] = -1
         return data
         
     def getGoal(self):
         return self._goal
     
     def checkPositionFree(self, position):   # test if a new position is valid
-
         #TODO check if position inside maze (bombs...) 
-        if position[1] < 0 or position[1] > len(self._grid) or \
-           position[0] < 0 or position[1] > len(self._grid[0]):
-               return False
-    
-        if self._grid[position[1]][position[0]] == 0 or \
-           self._grid[position[1]][position[0]] == 128 or \
-           self._grid[position[1]][position[0]] == 129:
-            return True            
-        else:
-            return False
+        try:
+            if self._grid[position[1]][position[0]] == 0 or \
+                self._grid[position[1]][position[0]] == 128 or \
+                self._grid[position[1]][position[0]] == 129:
+                return True      
+            else:
+                return False     
+        except IndexError:
+            return False 
+
     
     def checkPortal(self, position):
         return position in self._portals

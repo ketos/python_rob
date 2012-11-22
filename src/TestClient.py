@@ -11,7 +11,7 @@ class TestClient(BaseRobotClient):
 
     def __init__(self):
         super(TestClient, self).__init__()
-        #test teleporter  self.commands = [0,0,3, 3,0,3, 4]
+        self.commands = [0,0,3, 3,0,3, 4]
         #test sensor_data self.commands = [3,4,0]        
         self.index = 0
 
@@ -22,7 +22,7 @@ class TestClient(BaseRobotClient):
             print "ups I was teleported"
         if sensor_data != None:
             print sensor_data
-        """
+        
         cmd = self.commands[self.index]
         self.index += 1
         if self.index == len(self.commands):
@@ -31,3 +31,4 @@ class TestClient(BaseRobotClient):
         return cmd
         """     
         return random.randrange(0, 7, 1)
+        """
