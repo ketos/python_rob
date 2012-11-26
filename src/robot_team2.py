@@ -68,14 +68,14 @@ class robot_team2(BaseRobotClient):
         self.heading = self.North
         
     def printLog(self, sensor_data, bumper):  
-        self.logger.info("\tturn: %i\n" % (self.turn))
-        self.logger.info("\tcmd: %s\n" % (Command.names[self.cmd]))
-        self.logger.info("\tsensor: %s\n" % (sensor_data))
-        self.logger.info("\tbumper: %s\n" % (bumper))
-        self.logger.info("\tbatt: %i\n" % (self.batt))
-        self.logger.info("\tpos: %i, %i\n" % (self.rel_pos[0], self.rel_pos[1]))
-        self.logger.info("\theading: %s\n" % (self.heading_names[self.heading]))
-        self.logger.info("\tcalculation-time: %s\n" % (self.time2 - self.time1));
+        self.logger.info("\tturn: %i" % (self.turn))
+        self.logger.info("\tcmd: %s" % (Command.names[self.cmd]))
+        self.logger.info("\tsensor: %s" % (sensor_data))
+        self.logger.info("\tbumper: %s" % (bumper))
+        self.logger.info("\tbatt: %i" % (self.batt))
+        self.logger.info("\tpos: %i, %i" % (self.rel_pos[0], self.rel_pos[1]))
+        self.logger.info("\theading: %s" % (self.heading_names[self.heading]))
+        self.logger.info("\tcalculation-time: %s" % (self.time2 - self.time1));
 
         
     def updateBatt(self):
