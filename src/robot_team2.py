@@ -9,6 +9,9 @@ Created on Thu Nov  1 20:56:09 2012
 from BaseRobotClient import *
 from GameVisualizer import GameVisualizer
 
+import time
+import logging
+
 class robot_team2(BaseRobotClient):
     
     North, East, South, West = range(4)
@@ -44,11 +47,17 @@ class robot_team2(BaseRobotClient):
         super(robot_team2, self).__init__()  
         self.index = 0
         self.turn = 1
-        self.logfile = open("log.txt", "w")
         self.cmd = -1
         self.batt = 100
         self.sens_tmp = None
         self.rel_pos = [0, 0]
+        
+        self.logger = logging.getLogger('Robot_Team2')
+        self.flog = logging.FileHandler('./flog.log')
+        self.formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s');
+        self.flog.setFormatter(self.formatter)
+        self.logger.addHandler(self.flog)
+        self.logger.setLevel(logging.INFO);
         
         # construct map with map_size full of void (-1)
         self.map = [[self.void for ni in range(self.map_size)] for mi in range(self.map_size)]
@@ -58,16 +67,16 @@ class robot_team2(BaseRobotClient):
         # define init heading of robot as north
         self.heading = self.North
         
-    def printLog(self, sensor_data, bumper):   
-        self.logfile.write("Turn: %i\n" % (self.turn))
-        self.logfile.write("\tcmd: %s\n" % (Command.names[self.cmd]))
-        self.logfile.write("\tsensor: %s\n" % (sensor_data))
-        self.logfile.write("\tbumper: %s\n" % (bumper))
-        self.logfile.write("\tbatt: %i\n" % (self.batt))
-        self.logfile.write("\n")
-        self.logfile.write("\tpos: %i, %i\n" % (self.rel_pos[0], self.rel_pos[1]))
-        self.logfile.write("\theading: %s\n" % (self.heading_names[self.heading]))
-        self.logfile.write("\n")
+    def printLog(self, sensor_data, bumper):  
+        self.logger.info("\tturn: %i\n" % (self.turn))
+        self.logger.info("\tcmd: %s\n" % (Command.names[self.cmd]))
+        self.logger.info("\tsensor: %s\n" % (sensor_data))
+        self.logger.info("\tbumper: %s\n" % (bumper))
+        self.logger.info("\tbatt: %i\n" % (self.batt))
+        self.logger.info("\tpos: %i, %i\n" % (self.rel_pos[0], self.rel_pos[1]))
+        self.logger.info("\theading: %s\n" % (self.heading_names[self.heading]))
+        self.logger.info("\tcalculation-time: %s\n" % (self.time2 - self.time1));
+
         
     def updateBatt(self):
         if(self.cmd == Command.Stay):
@@ -120,6 +129,8 @@ class robot_team2(BaseRobotClient):
 
 
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
+	self.time1 = time.time();
+	
         print "compass: ",compass
         if teleported:
             print "ups I was teleported"
@@ -178,14 +189,19 @@ class robot_team2(BaseRobotClient):
             self.cmd = Command.MoveForward
             
         # Print what iam doing at Log
-        self.printLog(sensor_data, bumper)
+        
         
         # Map enviroment
-        self.updateMap(sensor_data)              
-        
+        self.updateMap(sensor_data)            
+        self.time2 = time.time();
+        self.printLog(sensor_data, bumper)
         self.turn += 1
         
         # self.updateBatt()    
+
+	
+	
+	
 
         return self.cmd
     

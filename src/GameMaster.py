@@ -57,7 +57,7 @@ class GameMaster(object):
         if clientName in self.robot_clients.keys():
             clientName = clientName + str(len(self.robot_clients))
 
-        self.robot_clients[clientName] = module.TestClient()   # TODO get class name 
+        self.robot_clients[clientName] = module.robot_team2()   # TODO get class name 
         self.robot_states[clientName] = RobotState()
         start_position = self.maze.getStartPosition()
         self.robot_states[clientName].id = start_position[0]        
@@ -103,6 +103,7 @@ class GameMaster(object):
                     sensor_data["bombs"] = self.robot_states[name].bombs
                     self.robot_states[name].sense = False
                 compass = self.getCompass(self.robot_states[name])
+                command = 0
                 try:
                     command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
                 except:

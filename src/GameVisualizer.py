@@ -5,7 +5,7 @@ Created on Wed Oct 24 16:06:41 2012
 @author: DFKI-MARION-2
 """
 
-import Image
+#import Image
 from numpy import array
 from time import sleep
 
@@ -32,9 +32,9 @@ class GameVisualizer(object):
         print '\033[H\033[J'
         for row in self._maze.getGrid():
             print ' '.join([GameVisualizer.FORMATTER[i] for i in row])
-
+'''
     @staticmethod
     def invert(image):
         MAX_VAL = 255
         return [[(MAX_VAL - pixel) for pixel in row] for row in image]
-
+'''
