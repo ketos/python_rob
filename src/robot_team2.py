@@ -54,7 +54,7 @@ class robot_team2(BaseRobotClient):
         
         self.logger = logging.getLogger('Robot_Team2')
         self.flog = logging.FileHandler('./flog.log')
-        self.formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s');
+        self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s\t%(message)s');
         self.flog.setFormatter(self.formatter)
         self.logger.addHandler(self.flog)
         self.logger.setLevel(logging.INFO);
@@ -68,14 +68,14 @@ class robot_team2(BaseRobotClient):
         self.heading = self.North
         
     def printLog(self, sensor_data, bumper):  
-        self.logger.info("\tturn: %i" % (self.turn))
-        self.logger.info("\tcmd: %s" % (Command.names[self.cmd]))
-        self.logger.info("\tsensor: %s" % (sensor_data))
-        self.logger.info("\tbumper: %s" % (bumper))
-        self.logger.info("\tbatt: %i" % (self.batt))
-        self.logger.info("\tpos: %i, %i" % (self.rel_pos[0], self.rel_pos[1]))
-        self.logger.info("\theading: %s" % (self.heading_names[self.heading]))
-        self.logger.info("\tcalculation-time: %s" % (self.time2 - self.time1));
+        self.logger.info("turn: %i" % (self.turn))
+        self.logger.info("cmd: %s" % (Command.names[self.cmd]))
+        self.logger.info("sensor: %s" % (sensor_data))
+        self.logger.info("bumper: %s" % (bumper))
+        self.logger.info("batt: %i" % (self.batt))
+        self.logger.info("pos: %i, %i" % (self.rel_pos[0], self.rel_pos[1]))
+        self.logger.info("heading: %s" % (self.heading_names[self.heading]))
+        self.logger.info("calculation-time: %s" % (self.time2 - self.time1));
 
         
     def updateBatt(self):
@@ -199,10 +199,6 @@ class robot_team2(BaseRobotClient):
         
         # self.updateBatt()    
 
-	
-	
-	
-
         return self.cmd
     
     def printMap(self):
@@ -245,7 +241,6 @@ class robot_team2(BaseRobotClient):
     
     def __del__(self):
         self.printMap()
-        self.logfile.close()
         
         
         
