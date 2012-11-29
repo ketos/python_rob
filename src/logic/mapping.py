@@ -8,24 +8,35 @@ Created on 28.11.2012
 import numpy as np
 
 class mapping(object):
-    void, visited, start, target, wall, portal, loader = range(7)
-    state_names = ("void", "visited", "start", 
-                   "target", "wall", "portal", 
-                   "loader")
-    char = (" ", ".", "S", "X", "#", "O", "U")
+    void = 0
+    visited = 1 
+    start = 2 
+    target = 192
+    wall = 255
+    portal = 129
+    loader = 128
+    
+    index = {void : " ", visited : ".", start : "S",
+             target: "X", wall : "#", portal : "O",
+             loader : "E"
+            }
+    
     
     def __init__(self, size=1):
         self.map = np.zeros((size, size), int)
         self.size = size
+        # set startpoint on middle
+        self.map[self.size / 2][self.size / 2] = self.start
         
     def update(self, x, y, value):
-        self.map[y][x] = self.state_names.index(value)
+        if(self.map[y][x] != self.start):
+            self.map[y][x] = value
         
     def printFile(self):
         mapFile = open("map.txt","w")
         for i in range(self.size):
             for t in range(self.size):
-                mapFile.write("%s " % (self.char[self.map[i][t]]))
+                mapFile.write("%s " % (self.index[self.map[i][t]]))
                     
                 if t == self.size - 1:
                     mapFile.write("\t%i\n"%(i+1))

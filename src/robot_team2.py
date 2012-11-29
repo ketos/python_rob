@@ -19,7 +19,7 @@ class robot_team2(BaseRobotClient):
     heading_names = ("North", "East", "South", "West")
     look_names = ("front", "right", "back", "left")
     
-    map_size = 221
+    map_size = 61
     
     # Constants for the Mapping Chars 
     visited = 2
@@ -61,9 +61,7 @@ class robot_team2(BaseRobotClient):
         
         # construct map with map_size full of 0
         self.map = mapping.mapping(self.map_size)
-        
-        # set startpoint on middle
-        #self.map[self.map_size / 2][self.map_size / 2] = self.startpoint
+
         
         # define init heading of robot as north
         self.heading = self.North
@@ -114,20 +112,17 @@ class robot_team2(BaseRobotClient):
         x = half_size + self.rel_pos[0] 
         y = half_size - self.rel_pos[1] 
         
-        # Dont override Startpoint and Energypoint
         # set field as visited
-        self.map.update(x, y, "visited")
+        self.map.update(x, y, self.map.visited)
         
         if sensor_data != None:
-            # We have sensor_data
-            
             # For each look direction (front, right, back, left)
             # save enviroment in map
             for i in range(4):
                 if(sensor_data[self.look_names[i]] > 0):
                     self.map.update((x + self.n[self.heading][i][1]),
                                     (y + self.n[self.heading][i][0]),
-                                    "visited")
+                                     sensor_data[self.look_names[i]])
 
 
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
