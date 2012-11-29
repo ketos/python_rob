@@ -5,11 +5,13 @@ Created on Thu Nov  1 20:56:09 2012
 @author: tim
 """
 
-from BaseRobotClient import *
-from GameVisualizer import GameVisualizer
+from BaseRobotClient import Command, BaseRobotClient
+
+from logic import mapping
+from dbg import logger
 
 import time
-import logging
+
 
 class robot_team2(BaseRobotClient):
     
@@ -51,17 +53,17 @@ class robot_team2(BaseRobotClient):
         self.sens_tmp = None
         self.rel_pos = [0, 0]
         
-        self.logger = logging.getLogger('Robot_Team2')
-        self.flog = logging.FileHandler('./flog.log')
-        self.formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s\t%(message)s');
-        self.flog.setFormatter(self.formatter)
-        self.logger.addHandler(self.flog)
-        self.logger.setLevel(logging.INFO);
+        self.time1 = 0
+        self.time2 = 0
         
-        # construct map with map_size full of void (-1)
-        self.map = [[self.void for ni in range(self.map_size)] for mi in range(self.map_size)]
+        #Logging
+        self.logger = logger.logger()
+        
+        # construct map with map_size full of 0
+        self.map = mapping.mapping(self.map_size)
+        
         # set startpoint on middle
-        self.map[self.map_size / 2][self.map_size / 2] = self.startpoint
+        #self.map[self.map_size / 2][self.map_size / 2] = self.startpoint
         
         # define init heading of robot as north
         self.heading = self.North
@@ -74,12 +76,12 @@ class robot_team2(BaseRobotClient):
         self.logger.info("batt: %i" % (self.batt))
         self.logger.info("pos: %i, %i" % (self.rel_pos[0], self.rel_pos[1]))
         self.logger.info("heading: %s" % (self.heading_names[self.heading]))
-        self.logger.info("calculation-time: %s" % (self.time2 - self.time1));
+        self.logger.info("calculation-time: %s" % (self.time2 - self.time1))
 
         
     def updateBatt(self):
         if(self.cmd == Command.Stay):
-            self.Batt += 1
+            self.batt += 1
         elif(self.cmd == Command.RightTurn):
             self.batt -= 1
         elif(self.cmd == Command.LeftTurn):
@@ -113,9 +115,8 @@ class robot_team2(BaseRobotClient):
         y = half_size - self.rel_pos[1] 
         
         # Dont override Startpoint and Energypoint
-        if self.map[y][x] != self.startpoint and self.map[y][x] != 128:
-            # set field as visited
-            self.map[y][x] = self.visited
+        # set field as visited
+        self.map.update(x, y, "visited")
         
         if sensor_data != None:
             # We have sensor_data
@@ -124,12 +125,14 @@ class robot_team2(BaseRobotClient):
             # save enviroment in map
             for i in range(4):
                 if(sensor_data[self.look_names[i]] > 0):
-                    self.map[y + self.n[self.heading][i][0]][x + self.n[self.heading][i][1]] = sensor_data[self.look_names[i]]
+                    self.map.update((x + self.n[self.heading][i][1]),
+                                    (y + self.n[self.heading][i][0]),
+                                    "visited")
 
 
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
-	self.time1 = time.time();
-	
+        self.time1 = time.time()
+
         print "compass: ",compass
         if teleported:
             print "ups I was teleported"
@@ -192,7 +195,7 @@ class robot_team2(BaseRobotClient):
         
         # Map enviroment
         self.updateMap(sensor_data)            
-        self.time2 = time.time();
+        self.time2 = time.time()
         self.printLog(sensor_data, bumper)
         self.turn += 1
         
@@ -200,46 +203,10 @@ class robot_team2(BaseRobotClient):
 
         return self.cmd
     
-    def printMap(self):
-        mapFile = open("map.txt","w")
-        for i in range(self.map_size):
-            for t in range(self.map_size):
-                if self.map[i][t] == self.startpoint:
-                    mapFile.write("S ")
-                elif self.map[i][t] == self.visited:
-                    mapFile.write(". ")  
-                elif self.map[i][t] == -1:
-                    mapFile.write("  ")
-                else:
-                    mapFile.write("%s " % (GameVisualizer.FORMATTER[self.map[i][t]]))
-                    
-                if t == self.map_size - 1:
-                    mapFile.write("\t%i\n"%(i+1))
-                 
-        mapFile.write("\n")   
-        
-        for i in range(1, self.map_size + 1):
-            if (i%2 == 1) and (i < 10):
-                mapFile.write("%i   " % i)
-            elif (i%2 == 1) and (i < 100):
-                mapFile.write("%i  " % i)
-            elif (i%2 == 1):
-                mapFile.write("%i " % i)
-                 
-        mapFile.write("\n")
-                    
-        for i in range(1, self.map_size + 1):
-            if (i%2 == 0) and (i < 10):
-                mapFile.write("  %i " % i)
-            elif (i%2 == 0) and (i < 100):
-                mapFile.write("  %i" % i)
-            elif (i%2 == 0):
-                mapFile.write(" %i" % i)
-        
-        mapFile.close()
+    
     
     def __del__(self):
-        self.printMap()
+        self.map.printFile()
         
         
         
