@@ -46,7 +46,7 @@ class GameMaster(object):
     def __init__(self):
         self.robot_clients = {}
         self.robot_states = {}
-        self.maze = Maze('../data/maze1.pgm')
+        self.maze = Maze('../data/maze1s.pgm')
         # don't use: self.visualizer = GameVisualizerImage(self.maze)
         self.visualizer = GameVisualizer(self.maze)
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
@@ -88,7 +88,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 130 and not self.gameFinished(): #i < 10: #
+        while i < 300 and not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.05)
             self.visualizer.showState()

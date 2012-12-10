@@ -14,11 +14,17 @@ class mapping(object):
     target = 192
     wall = 255
     portal = 129
-    loader = 128
+    loader = 128 
+
+    north = 100
+    east = 101
+    south = 102
+    west = 103
     
     index = {void : " ", visited : ".", start : "S",
              target: "X", wall : "#", portal : "O",
-             loader : "E"
+             loader : "E", north : "^", east : ">" ,
+             south : "v" , west : "<"
             }
     
     
@@ -29,7 +35,7 @@ class mapping(object):
         self.map[self.size / 2][self.size / 2] = self.start
         
     def update(self, x, y, value):
-        if(self.map[y][x] != self.start):
+        #if (self.map[y][x] != self.start):
             self.map[y][x] = value
         
     def printFile(self):

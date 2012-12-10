@@ -19,7 +19,7 @@ class robot_team2(BaseRobotClient):
     heading_names = ("North", "East", "South", "West")
     look_names = ("front", "right", "back", "left")
     
-    map_size = 61
+    map_size = 201
     
     # Constants for the Mapping Chars 
     visited = 2
@@ -52,6 +52,9 @@ class robot_team2(BaseRobotClient):
         self.batt = 100
         self.sens_tmp = None
         self.rel_pos = [0, 0]
+
+        self.turned = False
+        self.cycle = False
         
         self.time1 = 0
         self.time2 = 0
@@ -113,7 +116,7 @@ class robot_team2(BaseRobotClient):
         y = half_size - self.rel_pos[1] 
         
         # set field as visited
-        self.map.update(x, y, self.map.visited)
+        self.map.update(x, y, self.heading + 100)
         
         if sensor_data != None:
             # For each look direction (front, right, back, left)
@@ -131,74 +134,68 @@ class robot_team2(BaseRobotClient):
         print "compass: ",compass
         if teleported:
             print "ups I was teleported"
-        
-        
-        
+
         self.updatePos(bumper)
-        
-        # Scan if bumped
-        if bumper:
+
+        #-------------------------------------------------------------------------#          
+
+        # Scan jeden zweiten schritt
+        if self.turn % 2:
             self.cmd = Command.Sense
-            
-        #If we have Sensor Data
-        elif sensor_data != None:
-            # Save Sensor Data for Future
-            self.sens_tmp = sensor_data
-            
+
+        elif (self.turned) and self.cycle == False:
+            if (sensor_data["front"] < 255):
+                self.cmd = Command.MoveForward
+                self.turned = False
+    
+        elif (self.map.map[(self.map_size/2) + self.rel_pos[1]][(self.map_size/2) - self.rel_pos[0]] == self.heading + 100 and self.turn != 2) or self.cycle == True:
+            self.cycle = True
+            if (sensor_data["left"] < 255):
+                self.cmd = Command.LeftTurn
+                self.turned = True
+                self.cycle = False
+            else:
+                self.rightHand(sensor_data)
+
+        else:
             # If our Batt-Value is wrong correct it.
             self.batt = sensor_data["battery"]
-            
-            # Where can we go?
-            if sensor_data["front"] < 255:
-                self.cmd = Command.MoveForward
-                
-            elif (sensor_data["right"] < 255) and (sensor_data["left"] < 255):
-                #More Possibilitis to turn
-                self.cmd = Command.LeftTurn
-                # PLACEHOLDER !!!!!!!!!!! <---------------------------------------------------!!!!!!!!!!!
-                
-            elif sensor_data["right"] < 255:
-                self.cmd = Command.RightTurn
-                
-            elif sensor_data["left"] < 255:
-                self.cmd = Command.LeftTurn
-                
-            elif sensor_data["back"] < 255:
-                self.cmd = Command.RightTurn
-
-            else:
-                # If we get stuck, make a new way
-                print "HELP! Iam stuck."
-                self.cmd = Command.DropBomb
+    
+            self.rightHand(sensor_data)
         
-        # We have no sensor_data but old sensor data        
-        elif self.sens_tmp != None:
-            if (self.cmd == Command.LeftTurn) and (self.sens_tmp["left"] < 255):
-                self.cmd = Command.MoveForward
-            elif (self.cmd == Command.RightTurn) and (self.sens_tmp["right"] < 255):
-                self.cmd = Command.MoveForward
-                
-            # delete old data
-            self.sens_tmp = None
-        
-        # We have no idea what to do, lets move
-        else:
-            self.cmd = Command.MoveForward
-            
-        # Print what iam doing at Log
+            self.sens_tmp = sensor_data
         
         
         # Map enviroment
-        self.updateMap(sensor_data)            
+        self.updateMap(sensor_data)  
+          
         self.time2 = time.time()
         self.printLog(sensor_data, bumper)
         self.turn += 1
-        
-        # self.updateBatt()    
-
+          
         return self.cmd
     
-    
+    def rightHand(self, sensor_data):
+        if (sensor_data["right"] < 255) and (sensor_data["left"] < 255):
+            #More Possibilitis to turn
+            self.cmd = Command.RightTurn
+            self.turned = True
+                
+        elif sensor_data["right"] < 255:
+            self.cmd = Command.RightTurn
+            self.turned = True
+
+        elif sensor_data["front"] < 255:
+            self.cmd = Command.MoveForward
+            self.turned = False
+                
+        elif sensor_data["left"] < 255:
+            self.cmd = Command.LeftTurn
+            self.turned = True
+                
+        elif sensor_data["back"] < 255:
+            self.cmd = Command.RightTurn
+            self.turned = False
     
     def __del__(self):
         self.map.printFile()
