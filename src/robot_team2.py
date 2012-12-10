@@ -69,7 +69,9 @@ class robot_team2(BaseRobotClient):
         # define init heading of robot as north
         self.heading = self.North
         
-    def printLog(self, sensor_data, bumper):  
+    def printLog(self, sensor_data, bumper):
+        self.logger.info("%4i: %-11s in %f sec" % (self.turn, Command.names[self.cmd], self.time2 - self.time1))
+        '''  
         self.logger.info("turn: %i" % (self.turn))
         self.logger.info("cmd: %s" % (Command.names[self.cmd]))
         self.logger.info("sensor: %s" % (sensor_data))
@@ -78,7 +80,7 @@ class robot_team2(BaseRobotClient):
         self.logger.info("pos: %i, %i" % (self.rel_pos[0], self.rel_pos[1]))
         self.logger.info("heading: %s" % (self.heading_names[self.heading]))
         self.logger.info("calculation-time: %s" % (self.time2 - self.time1))
-
+        '''
         
     def updateBatt(self):
         if(self.cmd == Command.Stay):
