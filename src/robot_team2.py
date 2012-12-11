@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Nov  1 20:56:09 2012
-möp
+
 @author: tim
 """
 
@@ -51,8 +51,7 @@ class robot_team2(BaseRobotClient):
         self.turn = 1
         self.cmd = -1
         self.batt = 100
-        self.sens_tmp = None
-        
+
         self.rel_pos = [0, 0]
         self.map_pos = [self.half_size, self.half_size]
 
@@ -109,7 +108,7 @@ class robot_team2(BaseRobotClient):
     def updateMap(self, sensor_data):
         # Map the enviroment
         
-        # set field as visited
+        # set field as visited with heading
         self.map.update(self.map_pos[0], self.map_pos[1], self.heading + 100)
         
         if sensor_data != None:
@@ -145,6 +144,9 @@ class robot_team2(BaseRobotClient):
             self.cycle = True
             if (sensor_data["left"] < 255):
                 self.lt()
+                self.cycle = False
+            elif (sensor_data["front"] < 255) and (sensor_data["right"] < 255):
+                self.mv()
                 self.cycle = False
             else:
                 self.rightHand(sensor_data)
