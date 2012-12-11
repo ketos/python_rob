@@ -20,6 +20,7 @@ class robot_team2(BaseRobotClient):
     look_names = ("front", "right", "back", "left")
     
     map_size = 201
+    half_size = (map_size/2)
     
     # Constants for the Mapping Chars 
     visited = 2
@@ -51,7 +52,9 @@ class robot_team2(BaseRobotClient):
         self.cmd = -1
         self.batt = 100
         self.sens_tmp = None
+        
         self.rel_pos = [0, 0]
+        self.map_pos = [self.half_size, self.half_size]
 
         self.turned = False
         self.cycle = False
@@ -64,23 +67,12 @@ class robot_team2(BaseRobotClient):
         
         # construct map with map_size full of 0
         self.map = mapping.mapping(self.map_size)
-
         
         # define init heading of robot as north
         self.heading = self.North
         
     def printLog(self, sensor_data, bumper):
         self.logger.info("%4i: %-11s in %f sec" % (self.turn, Command.names[self.cmd], self.time2 - self.time1))
-        '''  
-        self.logger.info("turn: %i" % (self.turn))
-        self.logger.info("cmd: %s" % (Command.names[self.cmd]))
-        self.logger.info("sensor: %s" % (sensor_data))
-        self.logger.info("bumper: %s" % (bumper))
-        self.logger.info("batt: %i" % (self.batt))
-        self.logger.info("pos: %i, %i" % (self.rel_pos[0], self.rel_pos[1]))
-        self.logger.info("heading: %s" % (self.heading_names[self.heading]))
-        self.logger.info("calculation-time: %s" % (self.time2 - self.time1))
-        '''
         
     def updateBatt(self):
         if(self.cmd == Command.Stay):
@@ -110,23 +102,23 @@ class robot_team2(BaseRobotClient):
             else:
                 self.rel_pos[0] -= 1
                 
+            # Update Map coords
+            self.map_pos[0] = self.half_size + self.rel_pos[0] 
+            self.map_pos[1] = self.half_size - self.rel_pos[1] 
+                
     def updateMap(self, sensor_data):
         # Map the enviroment
-        half_size = (self.map_size/2)
-        
-        x = half_size + self.rel_pos[0] 
-        y = half_size - self.rel_pos[1] 
         
         # set field as visited
-        self.map.update(x, y, self.heading + 100)
+        self.map.update(self.map_pos[0], self.map_pos[1], self.heading + 100)
         
         if sensor_data != None:
             # For each look direction (front, right, back, left)
             # save enviroment in map
             for i in range(4):
                 if(sensor_data[self.look_names[i]] > 0):
-                    self.map.update((x + self.n[self.heading][i][1]),
-                                    (y + self.n[self.heading][i][0]),
+                    self.map.update((self.map_pos[0] + self.n[self.heading][i][1]),
+                                    (self.map_pos[1] + self.n[self.heading][i][0]),
                                      sensor_data[self.look_names[i]])
 
 
@@ -142,19 +134,17 @@ class robot_team2(BaseRobotClient):
         #-------------------------------------------------------------------------#          
 
         # Scan jeden zweiten schritt
-        if self.turn % 2:
+        if (self.turn % 2):
             self.cmd = Command.Sense
 
-        elif (self.turned) and self.cycle == False:
+        elif (self.turned) and (self.cycle == False):
             if (sensor_data["front"] < 255):
-                self.cmd = Command.MoveForward
-                self.turned = False
+                self.mv()
     
-        elif (self.map.map[(self.map_size/2) + self.rel_pos[1]][(self.map_size/2) - self.rel_pos[0]] == self.heading + 100 and self.turn != 2) or self.cycle == True:
+        elif (self.cycleDec() and self.turn != 2 and self.turned != True) or (self.cycle):
             self.cycle = True
             if (sensor_data["left"] < 255):
-                self.cmd = Command.LeftTurn
-                self.turned = True
+                self.lt()
                 self.cycle = False
             else:
                 self.rightHand(sensor_data)
@@ -163,13 +153,10 @@ class robot_team2(BaseRobotClient):
             # If our Batt-Value is wrong correct it.
             self.batt = sensor_data["battery"]
     
-            self.rightHand(sensor_data)
-        
-            self.sens_tmp = sensor_data
-        
-        
-        # Map enviroment
-        self.updateMap(sensor_data)  
+            self.rightHand(sensor_data)        
+         
+        if (self.cmd != Command.Sense):
+            self.updateMap(sensor_data)  
           
         self.time2 = time.time()
         self.printLog(sensor_data, bumper)
@@ -178,26 +165,34 @@ class robot_team2(BaseRobotClient):
         return self.cmd
     
     def rightHand(self, sensor_data):
-        if (sensor_data["right"] < 255) and (sensor_data["left"] < 255):
-            #More Possibilitis to turn
-            self.cmd = Command.RightTurn
-            self.turned = True
-                
-        elif sensor_data["right"] < 255:
-            self.cmd = Command.RightTurn
-            self.turned = True
+        if sensor_data["right"] < 255:
+            self.rt()
 
         elif sensor_data["front"] < 255:
-            self.cmd = Command.MoveForward
-            self.turned = False
+            self.mv()
                 
         elif sensor_data["left"] < 255:
-            self.cmd = Command.LeftTurn
-            self.turned = True
+            self.lt()
                 
         elif sensor_data["back"] < 255:
-            self.cmd = Command.RightTurn
+            self.rt()
             self.turned = False
+            
+    def cycleDec(self):
+        return self.map.map[self.map_pos[0],
+                            self.map_pos[1]] == self.heading + 100
+        
+    def lt(self):
+        self.cmd = Command.LeftTurn
+        self.turned = True
+        
+    def rt(self):
+        self.cmd = Command.RightTurn
+        self.turned = True
+        
+    def mv(self):
+        self.cmd = Command.MoveForward
+        self.turned = False
     
     def __del__(self):
         self.map.printFile()
