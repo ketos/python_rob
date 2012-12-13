@@ -58,17 +58,20 @@ class mapping(object):
         # set startpoint on middle
         self.map[self.size / 2][self.size / 2] = self.start
         
-    def update(self, x, y, heading, env):
-        self.map[y][x] = heading
+        self.pos = [self.size / 2, self.size / 2]
+        
+    def update(self, pos, heading, env):   
+        self.pos = self.toMapPos(pos)   
+        self.map[self.pos[1]][self.pos[0]] = heading
         
         if env != None:
             for i in range(4):
                 if(env[self.dir_names[i]] > 0):
-                    self.map[(y + self.n[heading][i][0]),
-                             (x + self.n[heading][i][1])] = env[self.dir_names[i]]
+                    self.map[(self.pos[1] + self.n[heading][i][0]),
+                             (self.pos[0] + self.n[heading][i][1])] = env[self.dir_names[i]]
            
            
-    def env(self, x, y, heading):
+    def env(self, pos, heading):
         data = {}
         try:
             data["front"] = self.map[y + self.n[heading][0][0], x + self.n[heading][0][1]]
@@ -89,6 +92,17 @@ class mapping(object):
             
         print data
         return data
+        
+    def toMapPos(self, pos):
+        # Update Map coords
+        data = [0, 0]
+        data[0] = self.size / 2 + pos[0] 
+        data[1] = self.size / 2 - pos[1]
+        
+        return data
+        
+    def look(self, pos):
+        return self.map[self.toMapPos(pos)[1], self.toMapPos(pos)[0]]
         
     def printFile(self):
         mapFile = open("map.txt","w")

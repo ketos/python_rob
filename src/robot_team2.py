@@ -17,18 +17,8 @@ class robot_team2(BaseRobotClient):
     
     North, East, South, West = range(4)
     heading_names = ("North", "East", "South", "West")
-    look_names = ("front", "right", "back", "left")
     
     map_size = 201
-    half_size = (map_size/2)
-    
-    # Constants for the Mapping Chars 
-    visited = 2
-    startpoint = 1
-    void = -1
-    
-
-
     def __init__(self):
         super(robot_team2, self).__init__()  
         self.index = 0
@@ -37,7 +27,6 @@ class robot_team2(BaseRobotClient):
         self.batt = 100
 
         self.rel_pos = [0, 0]
-        self.map_pos = [self.half_size, self.half_size]
 
         self.turned = False
         self.cycle = False
@@ -85,15 +74,12 @@ class robot_team2(BaseRobotClient):
             else:
                 self.rel_pos[0] -= 1
                 
-            # Update Map coords
-            self.map_pos[0] = self.half_size + self.rel_pos[0] 
-            self.map_pos[1] = self.half_size - self.rel_pos[1] 
                 
     def updateMap(self, sensor_data):
         # Map the enviroment
         
         # set field as visited with heading
-        self.map.update(self.map_pos[0], self.map_pos[1], self.heading, sensor_data)
+        self.map.update(self.rel_pos, self.heading, sensor_data)
             
 
 
@@ -161,8 +147,7 @@ class robot_team2(BaseRobotClient):
             self.turned = False
             
     def wasHere(self):
-        return self.map.map[self.map_pos[0],
-                            self.map_pos[1]] == self.heading
+        return self.map.look(self.rel_pos) == self.heading
         
     def lt(self):
         self.cmd = Command.LeftTurn
