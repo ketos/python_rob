@@ -14,6 +14,7 @@ from BaseRobotClient import *
 from GameVisualizerRawTerminal import GameVisualizerRawTerminal as GameVisualizer
 #from GameVisualizerColorTerminal import GameVisualizerColorTerminal
 #from GameVisualizerImage import GameVisualizerImage
+import traceback
 
 class RobotState(object):
     def __init__(self):
@@ -106,8 +107,10 @@ class GameMaster(object):
                 command = 0
                 try:
                     command = robot.getNextCommand(sensor_data, self.robot_states[name].bumper, compass,self.robot_states[name].teleported)
-                except:
-                    print "Error in robot",name,"continue" 
+                except Exception, e:
+                    print "Couldn't do it: %s" % e
+                    traceback.print_exc()
+                    a = raw_input()
                 print name, "command:", Command.names[command]
                 print "battery: ", self.robot_states[name].battery
 

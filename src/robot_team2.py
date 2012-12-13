@@ -27,23 +27,7 @@ class robot_team2(BaseRobotClient):
     startpoint = 1
     void = -1
     
-    # Relative Coordinates of Front, Right, Back, Left
-    # y and x are in inverted order due to array implementation
-    # Example (North):        front
-    #                        (-1, 0)
-    #                  0, 0    0, 1    0, 2    
-    # 
-    #     left (0, -1) 1, 0    1, 1    1, 2 (0, 1) right
-    # 
-    #                  2, 0    2, 1    2, 2
-    #                         (1, 0)
-    #                          back
-    n = (
-         ((-1,0), (0, 1), (1, 0), (0,-1)), # heading North
-         ((0, 1), (1, 0), (0,-1), (-1,0)), # heading East
-         ((1, 0), (0,-1), (-1,0), (0, 1)), # heading South
-         ((0,-1), (-1,0), (0, 1), (1, 0))  # heading West
-         )
+
 
     def __init__(self):
         super(robot_team2, self).__init__()  
@@ -71,7 +55,7 @@ class robot_team2(BaseRobotClient):
         self.heading = self.North
         
     def printLog(self, sensor_data, bumper):
-        self.logger.info("%4i: %-11s in %f sec" % (self.turn, Command.names[self.cmd], self.time2 - self.time1))
+        self.logger.info("%4i: %-11s in %f sec c:%s" % (self.turn, Command.names[self.cmd], self.time2 - self.time1, self.cycle))
         
     def updateBatt(self):
         if(self.cmd == Command.Stay):
@@ -109,16 +93,8 @@ class robot_team2(BaseRobotClient):
         # Map the enviroment
         
         # set field as visited with heading
-        self.map.update(self.map_pos[0], self.map_pos[1], self.heading + 100)
-        
-        if sensor_data != None:
-            # For each look direction (front, right, back, left)
-            # save enviroment in map
-            for i in range(4):
-                if(sensor_data[self.look_names[i]] > 0):
-                    self.map.update((self.map_pos[0] + self.n[self.heading][i][1]),
-                                    (self.map_pos[1] + self.n[self.heading][i][0]),
-                                     sensor_data[self.look_names[i]])
+        self.map.update(self.map_pos[0], self.map_pos[1], self.heading, sensor_data)
+            
 
 
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
@@ -130,35 +106,39 @@ class robot_team2(BaseRobotClient):
 
         self.updatePos(bumper)
 
-        #-------------------------------------------------------------------------#          
+        #----------------------------------------------------------------------#          
 
-        # Scan jeden zweiten schritt
+                
+        if (sensor_data != None):
+            self.batt = sensor_data["battery"]
+            
         if (self.turn % 2):
             self.cmd = Command.Sense
-
+        
         elif (self.turned) and (self.cycle == False):
             if (sensor_data["front"] < 255):
                 self.mv()
     
-        elif (self.cycleDec() and self.turn != 2 and self.turned != True) or (self.cycle):
+        elif (self.wasHere() and self.turn != 2 and self.turned != True) or (self.cycle):
+            # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
             self.cycle = True
             if (sensor_data["left"] < 255):
+                # Wir können dem Deadlock durch eine Linkskurve entkommen
                 self.lt()
                 self.cycle = False
             elif (sensor_data["front"] < 255) and (sensor_data["right"] < 255):
+                # Wir können dem Deadlock Weiterfahren entkommen,
+                # auch wenn wir rechts abbiegen müssten.
                 self.mv()
                 self.cycle = False
             else:
                 self.rightHand(sensor_data)
 
         else:
-            # If our Batt-Value is wrong correct it.
-            self.batt = sensor_data["battery"]
-    
             self.rightHand(sensor_data)        
          
         if (self.cmd != Command.Sense):
-            self.updateMap(sensor_data)  
+            self.updateMap(sensor_data)
           
         self.time2 = time.time()
         self.printLog(sensor_data, bumper)
@@ -166,23 +146,23 @@ class robot_team2(BaseRobotClient):
           
         return self.cmd
     
-    def rightHand(self, sensor_data):
-        if sensor_data["right"] < 255:
+    def rightHand(self, env):
+        if env["right"] < 255:
             self.rt()
 
-        elif sensor_data["front"] < 255:
+        elif env["front"] < 255:
             self.mv()
                 
-        elif sensor_data["left"] < 255:
+        elif env["left"] < 255:
             self.lt()
                 
-        elif sensor_data["back"] < 255:
+        elif env["back"] < 255:
             self.rt()
             self.turned = False
             
-    def cycleDec(self):
+    def wasHere(self):
         return self.map.map[self.map_pos[0],
-                            self.map_pos[1]] == self.heading + 100
+                            self.map_pos[1]] == self.heading
         
     def lt(self):
         self.cmd = Command.LeftTurn
