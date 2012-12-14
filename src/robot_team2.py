@@ -91,21 +91,34 @@ class robot_team2(BaseRobotClient):
             print "ups I was teleported"
 
         self.updatePos(bumper)
-
-        #----------------------------------------------------------------------#          
-
-                
+               
         if (sensor_data != None):
             self.batt = sensor_data["battery"]
             
-        if (self.turn % 2):
+        #----------------------------------------------------------------------#
+        #               SCAN_LOGIC
+        #----------------------------------------------------------------------#
+            
+        # nur alle zwei runden scannen und wenn das aktuelle
+        # feld noch nicht besucht wurde
+        if (self.turn % 2) and not(self.wasHere()):
             self.cmd = Command.Sense
+            self.turn += 1
+            return self.cmd
+        # wenn wir nicht jeden zweiten zug scannen
+        # holen wir uns die nötigen informationen aus der gemappten umgebung
+        elif (self.cycle) or (self.wasHere()):
+            sensor_data = self.map.envAt(self.rel_pos, self.heading)
         
-        elif (self.turned) and (self.cycle == False):
+        #----------------------------------------------------------------------#
+        #               PATH_LOGIC
+        #----------------------------------------------------------------------#
+        
+        if (self.turned) and not(self.cycle):
             if (sensor_data["front"] < 255):
                 self.mv()
     
-        elif (self.wasHere() and self.turn != 2 and self.turned != True) or (self.cycle):
+        elif (self.wasHere() and self.turn != 2 and not self.turned) or (self.cycle):
             # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
             self.cycle = True
             if (sensor_data["left"] < 255):
@@ -123,8 +136,8 @@ class robot_team2(BaseRobotClient):
         else:
             self.rightHand(sensor_data)        
          
-        if (self.cmd != Command.Sense):
-            self.updateMap(sensor_data)
+
+        self.updateMap(sensor_data)
           
         self.time2 = time.time()
         self.printLog(sensor_data, bumper)

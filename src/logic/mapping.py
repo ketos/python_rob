@@ -70,27 +70,27 @@ class mapping(object):
                     self.map[(self.pos[1] + self.n[heading][i][0]),
                              (self.pos[0] + self.n[heading][i][1])] = env[self.dir_names[i]]
            
-           
-    def env(self, pos, heading):
+    
+    def envAt(self, pos, heading):
         data = {}
+        tpos = self.toMapPos(pos)
         try:
-            data["front"] = self.map[y + self.n[heading][0][0], x + self.n[heading][0][1]]
+            data["front"] = self.map[tpos[1] + self.n[heading][0][0], tpos[0] + self.n[heading][0][1]]
         except IndexError:
             data["front"] = -1
         try:
-            data["right"] = self.map[y + self.n[heading][1][0], x + self.n[heading][1][1]]
+            data["right"] = self.map[tpos[1] + self.n[heading][1][0], tpos[0] + self.n[heading][1][1]]
         except IndexError:
             data["right"] = -1
         try:
-            data["back"] = self.map[y + self.n[heading][2][0], x + self.n[heading][2][1]]
+            data["back"] = self.map[tpos[1] + self.n[heading][2][0], tpos[0] + self.n[heading][2][1]]
         except IndexError:
             data["back"] = -1
         try:
-            data["left"] = self.map[y + self.n[heading][3][0], x + self.n[heading][3][1]]
+            data["left"] = self.map[tpos[1] + self.n[heading][3][0], tpos[0] + self.n[heading][3][1]]
         except IndexError:
             data["left"] = -1
-            
-        print data
+
         return data
         
     def toMapPos(self, pos):
