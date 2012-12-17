@@ -44,7 +44,11 @@ class robot_team2(BaseRobotClient):
         self.heading = self.North
         
     def printLog(self, sensor_data, bumper):
-        self.logger.info("%4i: %-11s in %f sec c:%s" % (self.turn, Command.names[self.cmd], self.time2 - self.time1, self.cycle))
+        self.logger.info("%4i: %-11s in %f sec c:%s wh:%s" % (self.turn, 
+                                                        Command.names[self.cmd],
+                                                        self.time2 - self.time1,
+                                                        self.cycle,
+                                                        self.wasHere()))
         
     def updateBatt(self):
         if(self.cmd == Command.Stay):
@@ -103,8 +107,12 @@ class robot_team2(BaseRobotClient):
         # feld noch nicht besucht wurde
         if (self.turn % 2) and not(self.wasHere()):
             self.cmd = Command.Sense
+            
+            self.time2 = time.time()
+            self.printLog(sensor_data, bumper)
             self.turn += 1
             return self.cmd
+            
         # wenn wir nicht jeden zweiten zug scannen
         # holen wir uns die nötigen informationen aus der gemappten umgebung
         elif (self.cycle) or (self.wasHere()):
@@ -115,17 +123,17 @@ class robot_team2(BaseRobotClient):
         #----------------------------------------------------------------------#
         
         if (self.turned) and not(self.cycle):
-            if (sensor_data["front"] < 255):
+            if (self.free("front", sensor_data)):
                 self.mv()
     
         elif (self.wasHere() and self.turn != 2 and not self.turned) or (self.cycle):
             # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
             self.cycle = True
-            if (sensor_data["left"] < 255):
+            if (self.free("left", sensor_data)):
                 # Wir können dem Deadlock durch eine Linkskurve entkommen
                 self.lt()
                 self.cycle = False
-            elif (sensor_data["front"] < 255) and (sensor_data["right"] < 255):
+            elif (self.free("front", sensor_data)) and (self.free("right", sensor_data)):
                 # Wir können dem Deadlock Weiterfahren entkommen,
                 # auch wenn wir rechts abbiegen müssten.
                 self.mv()
@@ -146,18 +154,25 @@ class robot_team2(BaseRobotClient):
         return self.cmd
     
     def rightHand(self, env):
-        if env["right"] < 255:
+        if self.free("right", env):
             self.rt()
 
-        elif env["front"] < 255:
+        elif self.free("front", env):
             self.mv()
                 
-        elif env["left"] < 255:
+        elif self.free("left", env):
             self.lt()
                 
-        elif env["back"] < 255:
+        elif self.free("back", env):
             self.rt()
             self.turned = False
+            
+    def free(self, direction, env):
+        if (env[direction] < 0) or (env[direction] < 255):
+            return True
+        else:
+            return False
+        
             
     def wasHere(self):
         return self.map.look(self.rel_pos) == self.heading
@@ -175,11 +190,4 @@ class robot_team2(BaseRobotClient):
         self.turned = False
     
     def __del__(self):
-        self.map.printFile()
-        
-        
-        
-        
-        
-        
-        
+        self.map.printFile()      
