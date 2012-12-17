@@ -89,7 +89,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 300 and not self.gameFinished(): #i < 10: #
+        while i < 800 and not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.05)
             self.visualizer.showState()
