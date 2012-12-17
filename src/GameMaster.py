@@ -89,11 +89,11 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 800 and not self.gameFinished(): #i < 10: #
+        while i < 300 and not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.05)
             self.visualizer.showState()
-            a = raw_input()
+            #a = raw_input()
             print "round",i
             for name, robot in self.robot_clients.items():
                 sensor_data = None

@@ -15,7 +15,10 @@ import time
 
 class robot_team2(BaseRobotClient):
     
-    North, East, South, West = range(4)
+    North = 0
+    East = 1
+    South = 2 
+    West = 3
     heading_names = ("North", "East", "South", "West")
     
     map_size = 201
@@ -68,7 +71,7 @@ class robot_team2(BaseRobotClient):
             self.heading = (self.heading + 1) % 4
         
         # If moved update position    
-        elif(self.cmd == Command.MoveForward) and (bumper == False) and (self.batt > 0):
+        elif (self.moved(bumper)):
             if(self.heading == self.North):
                 self.rel_pos[1] += 1
             elif(self.heading == self.East):
@@ -83,7 +86,7 @@ class robot_team2(BaseRobotClient):
         # Map the enviroment
         
         # set field as visited with heading
-        self.map.update(self.rel_pos, self.heading, sensor_data)
+        self.map.update(self.rel_pos, self.heading+1, sensor_data)
             
 
 
@@ -94,10 +97,11 @@ class robot_team2(BaseRobotClient):
         if teleported:
             print "ups I was teleported"
 
-        self.updatePos(bumper)
+        self.updatePos(bumper)          
                
         if (sensor_data != None):
             self.batt = sensor_data["battery"]
+            self.updateMap(sensor_data)
             
         #----------------------------------------------------------------------#
         #               SCAN_LOGIC
@@ -115,8 +119,9 @@ class robot_team2(BaseRobotClient):
             
         # wenn wir nicht jeden zweiten zug scannen
         # holen wir uns die nötigen informationen aus der gemappten umgebung
-        elif (self.cycle) or (self.wasHere()):
-            sensor_data = self.map.envAt(self.rel_pos, self.heading)
+        elif sensor_data == None:
+            sensor_data = self.map.envAt(self.rel_pos, self.heading+1)
+            #print sensor_data
         
         #----------------------------------------------------------------------#
         #               PATH_LOGIC
@@ -126,7 +131,7 @@ class robot_team2(BaseRobotClient):
             if (self.free("front", sensor_data)):
                 self.mv()
     
-        elif (self.wasHere() and self.turn != 2 and not self.turned) or (self.cycle):
+        elif (self.wasHere() and self.moved(bumper) and self.turn != 2 and not self.turned) or (self.cycle):
             # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
             self.cycle = True
             if (self.free("left", sensor_data)):
@@ -143,9 +148,6 @@ class robot_team2(BaseRobotClient):
 
         else:
             self.rightHand(sensor_data)        
-         
-
-        self.updateMap(sensor_data)
           
         self.time2 = time.time()
         self.printLog(sensor_data, bumper)
@@ -168,14 +170,16 @@ class robot_team2(BaseRobotClient):
             self.turned = False
             
     def free(self, direction, env):
-        if (env[direction] < 0) or (env[direction] < 255):
-            return True
-        else:
+        if (env[direction] == -1) or (env[direction] == 255):
             return False
+        else:
+            return True
         
-            
     def wasHere(self):
-        return self.map.look(self.rel_pos) == self.heading
+        return self.map.look(self.rel_pos) == self.heading+1
+        
+    def moved(self, bumper):
+        return (self.cmd == Command.MoveForward) and not bumper and (self.batt > 0)
         
     def lt(self):
         self.cmd = Command.LeftTurn

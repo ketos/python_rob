@@ -8,31 +8,32 @@ Created on 28.11.2012
 import numpy as np
 
 class mapping(object):
-    void = -1 
+    void = -1
+    free = 0
     start = 20 
     target = 192
     wall = 255
     portal = 129
     loader = 128 
 
-    north = 0
-    east = 1
-    south = 2
-    west = 3
+    north = 1
+    east = 2
+    south = 3
+    west = 4
     
     dir_names = {
                     0 : "front", 1 : "right", 2 : "back", 3 : "left"
                 }
     
-    index = {void : " ", start : "S",
+    index = {void : "-", free : " ", start : "S",
              target: "X", wall : "#", portal : "O",
              loader : "E", north : "^", east : ">" ,
              south : "v" , west : "<"
             }
             
-        # Relative Coordinates of Front, Right, Back, Left
-    # y and x are in inverted order due to array implementation
-    # Example (North):        front
+    # Relative Coordinates of Front, Right, Back, Left
+    # Example (North, x and y inverted):
+    #                         front
     #                        (-1, 0)
     #                  0, 0    0, 1    0, 2    
     # 
@@ -42,10 +43,10 @@ class mapping(object):
     #                         (1, 0)
     #                          back
     n = (
-         ((-1,0), (0, 1), (1, 0), (0,-1)), # heading North
-         ((0, 1), (1, 0), (0,-1), (-1,0)), # heading East
-         ((1, 0), (0,-1), (-1,0), (0, 1)), # heading South
-         ((0,-1), (-1,0), (0, 1), (1, 0))  # heading West
+         ((0,-1), (1, 0), (0, 1), (-1,0)), # heading North
+         ((1, 0), (0, 1), (-1,0), (0,-1)), # heading East
+         ((0, 1), (-1,0), (0,-1), (1, 0)), # heading South
+         ((-1,0), (0,-1), (1, 0), (0, 1))  # heading West
          )
     
     
@@ -60,36 +61,37 @@ class mapping(object):
         
         self.pos = [self.size / 2, self.size / 2]
         
-    def update(self, pos, heading, env):   
-        self.pos = self.toMapPos(pos)   
+    def update(self, pos, heading, env): 
+        self.pos = self.toMapPos(pos)
+        #print "add ", heading, " at ", self.pos, " to map"
+        #print "was: ", self.map[self.pos[1], self.pos[0]]
         self.map[self.pos[1]][self.pos[0]] = heading
         
         if env != None:
+            #print self.n[heading-1]
             for i in range(4):
-                if(env[self.dir_names[i]] > 0):
-                    self.map[(self.pos[1] + self.n[heading][i][0]),
-                             (self.pos[0] + self.n[heading][i][1])] = env[self.dir_names[i]]
+                tmp = self.map[(self.pos[1] + self.n[heading-1][i][1]),
+                             (self.pos[0] + self.n[heading-1][i][0])]
+                #print "i: ",i, " add ", env[self.dir_names[i]], " (", self.dir_names[i], ") at ", self.pos[0] + self.n[heading-1][i][0], ",", self.pos[1] + self.n[heading-1][i][1],self.n[heading-1][i], "to map"
+                #print "was: ", tmp
+                if tmp == -1:
+                    self.map[(self.pos[1] + self.n[heading-1][i][1]),
+                             (self.pos[0] + self.n[heading-1][i][0])] = env[self.dir_names[i]]
            
     
     def envAt(self, pos, heading):
         data = {}
         tpos = self.toMapPos(pos)
-        try:
-            data["front"] = self.map[tpos[1] + self.n[heading][0][0], tpos[0] + self.n[heading][0][1]]
-        except IndexError:
-            data["front"] = -1
-        try:
-            data["right"] = self.map[tpos[1] + self.n[heading][1][0], tpos[0] + self.n[heading][1][1]]
-        except IndexError:
-            data["right"] = -1
-        try:
-            data["back"] = self.map[tpos[1] + self.n[heading][2][0], tpos[0] + self.n[heading][2][1]]
-        except IndexError:
-            data["back"] = -1
-        try:
-            data["left"] = self.map[tpos[1] + self.n[heading][3][0], tpos[0] + self.n[heading][3][1]]
-        except IndexError:
-            data["left"] = -1
+        #print self.n[heading-1][0], "heading:", heading
+        
+        data["front"] = self.map[tpos[1] + self.n[heading-1][0][1], tpos[0] + self.n[heading-1][0][0]]
+
+        data["right"] = self.map[tpos[1] + self.n[heading-1][1][1], tpos[0] + self.n[heading-1][1][0]]
+
+        data["back"] = self.map[tpos[1] + self.n[heading-1][2][1], tpos[0] + self.n[heading-1][2][0]]
+
+        data["left"] = self.map[tpos[1] + self.n[heading-1][3][1], tpos[0] + self.n[heading-1][3][0]]
+
 
         return data
         
@@ -102,7 +104,8 @@ class mapping(object):
         return data
         
     def look(self, pos):
-        return self.map[self.toMapPos(pos)[1], self.toMapPos(pos)[0]]
+        tpos = self.toMapPos(pos)
+        return self.map[tpos[1], tpos[0]]
         
     def printFile(self):
         mapFile = open("map.txt","w")
