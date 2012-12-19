@@ -10,6 +10,8 @@ from BaseRobotClient import Command, BaseRobotClient
 from logic import mapping
 from dbg import logger
 
+import  GameVisualizer as viz
+
 import time
 
 
@@ -36,6 +38,8 @@ class robot_team2(BaseRobotClient):
         
         self.time1 = 0
         self.time2 = 0
+        
+        self.gv = viz.GameVisualizer(None)
         
         #Logging
         self.logger = logger.logger()
@@ -82,11 +86,11 @@ class robot_team2(BaseRobotClient):
                 self.rel_pos[0] -= 1
                 
                 
-    def updateMap(self, sensor_data):
+    def updateMap(self, sensor_data, compass):
         # Map the enviroment
         
         # set field as visited with heading
-        self.map.update(self.rel_pos, self.heading+1, sensor_data)
+        self.map.update(self.rel_pos, self.heading+1, sensor_data, compass)
             
 
 
@@ -96,12 +100,14 @@ class robot_team2(BaseRobotClient):
         print "compass: ",compass
         if teleported:
             print "ups I was teleported"
+            # create new submap
+            self.map.newSubmap()
 
         self.updatePos(bumper)          
                
         if (sensor_data != None):
             self.batt = sensor_data["battery"]
-            self.updateMap(sensor_data)
+            self.updateMap(sensor_data, compass)
             
         #----------------------------------------------------------------------#
         #               SCAN_LOGIC
@@ -119,10 +125,37 @@ class robot_team2(BaseRobotClient):
             
         # wenn wir nicht jeden zweiten zug scannen
         # holen wir uns die nötigen informationen aus der gemappten umgebung
-        elif sensor_data == None:
-            sensor_data = self.map.envAt(self.rel_pos, self.heading+1)
-            #print sensor_data
-        
+        if sensor_data == None:
+            sensor_data = self.map.get_env(self.rel_pos, self.heading + 1)
+        else:
+            tmp = self.map.get_env(self.rel_pos, self.heading + 1)
+            print sensor_data
+            print tmp
+            if(sensor_data['front'] != tmp['front']):
+                print "front correction"
+                sensor_data['front'] = tmp['front']
+                
+            if(sensor_data['right'] != tmp['right']):
+                print "right correction"
+                sensor_data['right'] = tmp['right']
+                
+            if(sensor_data['back'] != tmp['back']):
+                print "back correction"
+                sensor_data['back'] = tmp['back']
+                
+            if(sensor_data['left'] != tmp['left']):
+                print "left correction"
+                sensor_data['left'] = tmp['left']
+                
+        # Debug ------
+        # Print Enviroment
+        '''
+        print "    %s" % (self.gv.FORMATTER[sensor_data["front"]]) 
+        print " %s  ^  %s " % (self.gv.FORMATTER[sensor_data["left"]],self.gv.FORMATTER[sensor_data["right"]])
+        print "    %s" % (self.gv.FORMATTER[sensor_data["back"]])
+        print
+        #a = raw_input()
+        '''
         #----------------------------------------------------------------------#
         #               PATH_LOGIC
         #----------------------------------------------------------------------#
@@ -176,7 +209,7 @@ class robot_team2(BaseRobotClient):
             return True
         
     def wasHere(self):
-        return self.map.look(self.rel_pos) == self.heading+1
+        return self.map.get_head(self.rel_pos) == self.heading + 1       
         
     def moved(self, bumper):
         return (self.cmd == Command.MoveForward) and not bumper and (self.batt > 0)

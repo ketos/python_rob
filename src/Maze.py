@@ -92,6 +92,7 @@ class Maze(object):
     
     def checkPortal(self, position):
         return position in self._portals
+        
     def getFreePortal(self, robot_states):
         #TODO random        
         for portal in self._portals:

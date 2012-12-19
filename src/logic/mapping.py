@@ -6,6 +6,7 @@ Created on 28.11.2012
 '''
 
 import numpy as np
+from collections import Counter
 
 class mapping(object):
     void = -1
@@ -26,7 +27,7 @@ class mapping(object):
                 }
     
     index = {void : "-", free : " ", start : "S",
-             target: "X", wall : "#", portal : "O",
+             target : "X", wall : "#", portal : "O",
              loader : "E", north : "^", east : ">" ,
              south : "v" , west : "<"
             }
@@ -52,46 +53,101 @@ class mapping(object):
     
     def __init__(self, size=1):
         # erzeuge matrix mit -1 als inhalt
-        self.map = np.ones((size, size), int)
-        self.map *= -1
-        
-        self.size = size
-        # set startpoint on middle
-        self.map[self.size / 2][self.size / 2] = self.start
-        
+        self.map = self.create(size)
+
+        self.size = size       
         self.pos = [self.size / 2, self.size / 2]
         
-    def update(self, pos, heading, env): 
+        # Liste der Unterkarten die für die Sprünge notwendig sind
+        self.submaps = []
+        
+    def create(self, size):
+        dt = np.dtype([ ('visited', np.bool),
+                        ('heading', np.uint8),
+                        ('compass', np.uint8),
+                        ('enviro', np.uint8)])
+        return np.zeros((size, size), dt)
+        
+    def update(self, pos, heading, env, compass):           
+        
         self.pos = self.toMapPos(pos)
         #print "add ", heading, " at ", self.pos, " to map"
         #print "was: ", self.map[self.pos[1], self.pos[0]]
-        self.map[self.pos[1]][self.pos[0]] = heading
+        self.map[self.pos[1]][self.pos[0]]['heading'] = heading
+        
+        # die compass daten mussen angepasst werden
+        # mit dem aktuellen heading
+        
+        tcompass = compass + (heading-1) * 2
+        if tcompass < 0:
+            tcompass += 8
+        if tcompass > 7:
+            tcompass -= 8
+
+        self.map[self.pos[1]][self.pos[0]]['compass'] = tcompass
         
         if env != None:
-            #print self.n[heading-1]
+            # print self.n[heading-1]
+            print "Iam at ",pos[0],", ",pos[1]
             for i in range(4):
-                tmp = self.map[(self.pos[1] + self.n[heading-1][i][1]),
-                             (self.pos[0] + self.n[heading-1][i][0])]
-                #print "i: ",i, " add ", env[self.dir_names[i]], " (", self.dir_names[i], ") at ", self.pos[0] + self.n[heading-1][i][0], ",", self.pos[1] + self.n[heading-1][i][1],self.n[heading-1][i], "to map"
-                #print "was: ", tmp
-                if tmp == -1:
-                    self.map[(self.pos[1] + self.n[heading-1][i][1]),
-                             (self.pos[0] + self.n[heading-1][i][0])] = env[self.dir_names[i]]
-           
-    
-    def envAt(self, pos, heading):
+                x = (self.pos[0] + self.n[heading-1][i][0])
+                y = (self.pos[1] + self.n[heading-1][i][1])
+                
+                tmp = self.map[y,x]['enviro']
+                # print "i: ",i, " add ", env[self.dir_names[i]], " (", self.dir_names[i], ") at ", self.pos[0] + self.n[heading-1][i][0], ",", self.pos[1] + self.n[heading-1][i][1],self.n[heading-1][i], "to map"
+                if tmp != 255:
+                    self.map[y,x]['enviro'] = env[self.dir_names[i]]
+                    print "Set ",env[self.dir_names[i]]," at ",pos[0] + self.n[heading-1][i][0],", ",pos[1] + self.n[heading-1][i][1]
+                
+                #--------------------------------------------------------------#
+                #       SACKGASSEN_LOGIC
+                #--------------------------------------------------------------#
+                
+                if env[self.dir_names[i]] == 255 and tmp != 255:
+                    # Wenn wir eine Mauer gesetzt haben
+                    
+                    # Position des gestzen Mauerstücks (in real Koordinaten)
+                    x = (pos[0] + self.n[heading-1][i][0])
+                    y = (pos[1] + self.n[heading-1][i][1])
+                        
+                    for b in range(4):
+                        tx = x + self.n[heading-1][b][0]
+                        ty = y + self.n[heading-1][b][1]
+                        print "Look at ",tx,", ",ty
+                        wall_env = self.get_env((tx,ty),i)
+                        print wall_env
+                        
+                        count = Counter(wall_env.values())
+                        
+                        if count[255] >= 3 and self.map[ty,tx]['enviro'] != 255:
+                            # Bedingung erfüllt, fülle auf mit Mauer
+                            print "Füllung bei ",tx,",",ty
+                            a = raw_input()
+                            self.map[ty,tx]['enviro'] = 255
+                            
+    def get_env(self, pos, heading):
         data = {}
         tpos = self.toMapPos(pos)
         #print self.n[heading-1][0], "heading:", heading
-        
-        data["front"] = self.map[tpos[1] + self.n[heading-1][0][1], tpos[0] + self.n[heading-1][0][0]]
-
-        data["right"] = self.map[tpos[1] + self.n[heading-1][1][1], tpos[0] + self.n[heading-1][1][0]]
-
-        data["back"] = self.map[tpos[1] + self.n[heading-1][2][1], tpos[0] + self.n[heading-1][2][0]]
-
-        data["left"] = self.map[tpos[1] + self.n[heading-1][3][1], tpos[0] + self.n[heading-1][3][0]]
-
+        try:
+            data["front"] = self.map[tpos[1] + self.n[heading-1][0][1], tpos[0] + self.n[heading-1][0][0]]['enviro']
+        except IndexError:
+            data["front"] = -1
+            
+        try:    
+            data["right"] = self.map[tpos[1] + self.n[heading-1][1][1], tpos[0] + self.n[heading-1][1][0]]['enviro']
+        except IndexError:
+            data["right"] = -1
+            
+        try:
+            data["back"] = self.map[tpos[1] + self.n[heading-1][2][1], tpos[0] + self.n[heading-1][2][0]]['enviro']
+        except IndexError:
+            data["back"] = -1
+            
+        try:
+            data["left"] = self.map[tpos[1] + self.n[heading-1][3][1], tpos[0] + self.n[heading-1][3][0]]['enviro']
+        except IndexError:
+            data["left"] = -1
 
         return data
         
@@ -103,15 +159,31 @@ class mapping(object):
         
         return data
         
-    def look(self, pos):
+    def get_field(self, pos):
         tpos = self.toMapPos(pos)
-        return self.map[tpos[1], tpos[0]]
+        return self.map[tpos[1], tpos[0]]['enviro']
+        
+    def get_head(self, pos):
+        tpos = self.toMapPos(pos)
+        return self.map[tpos[1], tpos[0]]['heading']
+        
+        
+    def newSubmap():
+        self.submaps.append(self.map)
+        self.map = self.create(self.size)
+        
+    def fillTrap(self, pos):
+        env = self.envAt(pos, self.north)
+        print env
         
     def printFile(self):
         mapFile = open("map.txt","w")
         for i in range(self.size):
             for t in range(self.size):
-                mapFile.write("%s " % (self.index[self.map[i][t]]))
+                #mapFile.write("%s " % (self.index[self.map[i][t]['enviro']]))
+                
+                mapFile.write("%2i" % (self.map[i][t]['compass']))
+                
                     
                 if t == self.size - 1:
                     mapFile.write("\t%i\n"%(i+1))
