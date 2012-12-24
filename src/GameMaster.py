@@ -52,6 +52,7 @@ class GameMaster(object):
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
 
     def addClient(self, clientName):
+        
         print clientName
         module = __import__(clientName)
         if clientName in self.robot_clients.keys():
@@ -87,7 +88,7 @@ class GameMaster(object):
     def startGame(self):
         i = 0 # just for testing
         self.maze.updateRobotStates(self.robot_states)
-        while i < 1000 and not self.gameFinished(): #i < 10: #
+        while i < 100 and not self.gameFinished(): #i < 10: #
             i += 1
             sleep(0.05)
             self.visualizer.showState()
@@ -168,3 +169,5 @@ if __name__ == "__main__":
     master.addClient("TestClient")
     master.initGame()    
     master.startGame()
+    import cProfile
+    cProfile.run("master.startGame()")
