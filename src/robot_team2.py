@@ -101,7 +101,7 @@ class robot_team2(BaseRobotClient):
         if teleported:
             print "ups I was teleported"
             # create new submap
-            self.map.newSubmap()
+            #self.map.newSubmap()
 
         self.updatePos(bumper)          
                
@@ -129,8 +129,8 @@ class robot_team2(BaseRobotClient):
             sensor_data = self.map.get_env(self.rel_pos, self.heading + 1)
         else:
             tmp = self.map.get_env(self.rel_pos, self.heading + 1)
-            print sensor_data
-            print tmp
+            # print sensor_data
+            # print tmp
             if(sensor_data['front'] != tmp['front']):
                 print "front correction"
                 sensor_data['front'] = tmp['front']
@@ -150,10 +150,9 @@ class robot_team2(BaseRobotClient):
         # Debug ------
         # Print Enviroment
         '''
-        print "    %s" % (self.gv.FORMATTER[sensor_data["front"]]) 
-        print " %s  ^  %s " % (self.gv.FORMATTER[sensor_data["left"]],self.gv.FORMATTER[sensor_data["right"]])
-        print "    %s" % (self.gv.FORMATTER[sensor_data["back"]])
-        print
+        print "   %s" % (self.gv.FORMATTER[sensor_data["front"]]) 
+        print " %s ^ %s" % (self.gv.FORMATTER[sensor_data["left"]],self.gv.FORMATTER[sensor_data["right"]])
+        print "   %s" % (self.gv.FORMATTER[sensor_data["back"]])
         #a = raw_input()
         '''
         #----------------------------------------------------------------------#
