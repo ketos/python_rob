@@ -82,7 +82,8 @@ class Maze(object):
         try:
             if self._grid[position[1]][position[0]] == 0 or \
                 self._grid[position[1]][position[0]] == 128 or \
-                self._grid[position[1]][position[0]] == 129:
+                self._grid[position[1]][position[0]] == 129 or \
+                self._grid[position[1]][position[0]] == 192:
                 return True      
             else:
                 return False     

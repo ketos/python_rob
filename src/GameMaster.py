@@ -53,6 +53,7 @@ class GameMaster(object):
         #self.visualizer = GameVisualizerRawTerminal(self.maze)
 
     def addClient(self, clientName):
+        
         print clientName
         module = __import__(clientName)
         if clientName in self.robot_clients.keys():
@@ -173,3 +174,5 @@ if __name__ == "__main__":
     #master.addClient("TestClient")
     master.initGame()    
     master.startGame()
+    import cProfile
+    cProfile.run("master.startGame()")
