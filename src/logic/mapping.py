@@ -59,38 +59,46 @@ class mapping(object):
         self.size = size       
         self.pos = [self.size / 2, self.size / 2]
         
-        # Liste der Unterkarten die für die Sprünge notwendig sind
-        self.submaps = []
         
     def create(self, size):
-        dt = np.dtype([ ('visited', np.bool),
-                        ('heading', int),
+        dt = np.dtype([ ('visited', int),
+                        ('h_north', bool),
+                        ('h_east', bool),
+                        ('h_south', bool),
+                        ('h_west', bool),
                         ('compass', int),
                         ('enviro',  int)])
         return np.zeros((size, size), dt)
         
-    def update(self, pos, heading, env, compass):           
-        
+    def write(self, pos, attribute, value):
         self.pos = self.toMapPos(pos)
-        # print "add ", heading, " at ", self.pos, " to map"
-        # print "was: ", self.map[self.pos[1], self.pos[0]]
-        self.map[self.pos[1]][self.pos[0]]['heading'] = heading
+        self.map[self.pos[1]][self.pos[0]][attribute] = value
+        
+    def update(self, pos, heading, env, compass):
+        self.pos = self.toMapPos(pos)
+        
+        if (heading == self.north):
+            self.write(pos, 'h_north', True)
+        elif (heading == self.east):
+            self.write(pos, 'h_east', True)
+        elif (heading == self.south):
+            self.write(pos, 'h_south', True)
+        elif (heading == self.west):
+            self.write(pos, 'h_west', True)
         
         # die compass daten mussen angepasst werden
         # mit dem aktuellen heading
+        if (compass != None):
+            tcompass = compass + (heading - 1) * 2
         
-        tcompass = compass + (heading - 1) * 2
+            if tcompass < 0:
+                tcompass += 8
+            if tcompass > 7:
+                tcompass -= 8
         
-        if tcompass < 0:
-            tcompass += 8
-        if tcompass > 7:
-            tcompass -= 8
-        
-        self.map[self.pos[1]][self.pos[0]]['compass'] = (tcompass * 45)
+            self.map[self.pos[1]][self.pos[0]]['compass'] = (tcompass * 45)
         
         if env != None:
-            # print self.n[heading-1]
-            # print "Iam at ",pos[0],", ",pos[1]
             for i in range(4):         
                 #--------------------------------------------------------------#
                 #       UMGEBUNG_SPEICHERN
@@ -100,10 +108,10 @@ class mapping(object):
                 y = (self.pos[1] + self.n[heading - 1][i][1])
                 
                 tmp = self.map[y, x]['enviro']
-                # print "i: ",i, " add ", env[self.dir_names[i]], " (", self.dir_names[i], ") at ", self.pos[0] + self.n[heading-1][i][0], ",", self.pos[1] + self.n[heading-1][i][1],self.n[heading-1][i], "to map"
-                if tmp != 255:
-                    self.map[y, x]['enviro'] = env[self.dir_names[i]]
-                    # print "Set ",env[self.dir_names[i]]," at ",pos[0] + self.n[heading-1][i][0],", ",pos[1] + self.n[heading-1][i][1]
+                #print "i: ",i, " add ", env[self.dir_names[i]], " (", self.dir_names[i], ") at ", self.pos[0] + self.n[heading-1][i][0], ",", self.pos[1] + self.n[heading-1][i][1],self.n[heading-1][i], "to map"
+                
+                self.map[y, x]['enviro'] = env[self.dir_names[i]]
+                #print "Set ",env[self.dir_names[i]]," at ",pos[0] + self.n[heading-1][i][0],", ",pos[1] + self.n[heading-1][i][1] , "was ", tmp
                 
                 #--------------------------------------------------------------#
                 #       SACKGASSEN_LOGIC
@@ -130,6 +138,10 @@ class mapping(object):
                             # print "Füllung bei ",tx,",",ty
                             # a = raw_input()
                             self.map[ty, tx]['enviro'] = 255
+                            
+    def update_visited(self, pos):
+        self.pos = self.toMapPos(pos)
+        self.write(pos, 'visited', self.map[self.pos[1]][self.pos[0]]['visited'] + 1) 
                             
     def get_env(self, pos, heading):
         data = {}
@@ -169,11 +181,23 @@ class mapping(object):
         tpos = self.toMapPos(pos)
         return self.map[tpos[1], tpos[0]]['enviro']
         
-    def get_head(self, pos):
+    def get_head(self, pos, heading):
         tpos = self.toMapPos(pos)
-        return self.map[tpos[1], tpos[0]]['heading']
         
+        if (heading == self.north):
+            return self.map[tpos[1], tpos[0]]['h_north']
+        elif (heading == self.east):
+            return self.map[tpos[1], tpos[0]]['h_east']
+        elif (heading == self.south):
+            return self.map[tpos[1], tpos[0]]['h_south']
+        elif (heading == self.west):
+            return self.map[tpos[1], tpos[0]]['h_west']
         
+    
+    def get_visited(self, pos):
+        tpos = self.toMapPos(pos)
+        return self.map[tpos[1], tpos[0]]['visited']
+    
     def newSubmap():
         self.submaps.append(self.map)
         self.map = self.create(self.size)
@@ -186,9 +210,11 @@ class mapping(object):
         mapFile = open("map.txt", "w")
         for i in range(self.size):
             for t in range(self.size):
-                #mapFile.write("%s " % (self.index[self.map[i][t]['enviro']]))
+                mapFile.write("%s " % (self.index[self.map[i][t]['enviro']]))
                 
-                mapFile.write("%3i" % (self.map[i][t]['compass']))
+                #mapFile.write("%3i" % (self.map[i][t]['compass']))
+                
+                #mapFile.write("%3i" % (self.map[i][t]['visited']))
                 
                     
                 if t == self.size - 1:
