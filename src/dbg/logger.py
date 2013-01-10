@@ -7,6 +7,10 @@ Created on 29.11.2012
 import logging
 
 class logger(object):
+    ##
+    # @brief konstruktor
+    #
+    #
     def __init__(self):
         self.logger = logging.getLogger('Robot_Team2')
         self.flog = logging.FileHandler('./flog.log')
@@ -15,9 +19,10 @@ class logger(object):
         self.logger.addHandler(self.flog)
         self.logger.setLevel(logging.INFO)
         
+    ##
+    # @brief logt den info string
+    #
+    #
     def info(self, value):
         self.logger.info(value)
-        
-    def delLog(self):
-        pass
-        
+

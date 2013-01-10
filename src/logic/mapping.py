@@ -7,7 +7,6 @@ Created on 28.11.2012
 
 import numpy as np
 from collections import Counter
-import math
 
 class mapping(object):
     void = -1
@@ -44,13 +43,15 @@ class mapping(object):
     #                  2, 0    2, 1    2, 2
     #                         (1, 0)
     #                          back
+    # for map-coordinates
     n = (
          ((0 ,-1), (1 , 0), (0 , 1), (-1, 0)), # heading North
          ((1 , 0), (0 , 1), (-1, 0), (0 ,-1)), # heading East
          ((0 , 1), (-1, 0), (0 ,-1), (1 , 0)), # heading South
          ((-1, 0), (0 ,-1), (1 , 0), (0 , 1))  # heading West
         )
-        
+    
+    # same for real-coordinates    
     m = (
          ((0 , 1), (1 , 0), (0 ,-1), (-1, 0)), # heading North
          ((1 , 0), (0 ,-1), (-1, 0), (0 , 1)), # heading East
@@ -58,7 +59,10 @@ class mapping(object):
          ((-1, 0), (0 , 1), (1 , 0), (0 ,-1))  # heading West
         )
     
-    
+    ##
+    # @brief Konstruktor
+    #
+    #
     def __init__(self, size=1):
         # erzeuge matrix mit -1 als inhalt
         self.map = self.create(size)
@@ -66,7 +70,10 @@ class mapping(object):
         self.size = size       
         self.pos = [self.size / 2, self.size / 2]
         
-        
+    ##
+    # @brief Erzeugt neue Karte mit gegebener Grösse
+    #
+    #    
     def create(self, size):
         dt = np.dtype([ ('visited', int),
                         ('h_north', bool),
@@ -76,11 +83,19 @@ class mapping(object):
                         ('compass', int),
                         ('enviro',  int)])
         return np.zeros((size, size), dt)
-        
+    
+    ##
+    # @brief schriebt an die Stelle pos den Wert value an das Attribute
+    #
+    #    
     def write(self, pos, attribute, value):
         self.pos = self.toMapPos(pos)
         self.map[self.pos[1]][self.pos[0]][attribute] = value
         
+    ##
+    # @brief trägt Kompass und Umgebung des Roboters in Karte ein
+    #
+    #
     def update(self, pos, heading, env, compass):
         self.pos = self.toMapPos(pos)
         
@@ -108,7 +123,7 @@ class mapping(object):
                 tmp = self.map[y, x]['enviro']
                 
                 # keine Roboter mappen
-                if (env[self.dir_names[i]] < 150 or env[self.dir_names[i]] > 161) and (env[self.dir_names[i]] != 0):
+                if (env[self.dir_names[i]] < 150 or env[self.dir_names[i]] > 161):
                     self.map[y, x]['enviro'] = env[self.dir_names[i]]
 
                 
@@ -125,25 +140,37 @@ class mapping(object):
                       
                     self.fill_up((x,y), heading, pos)  
                     
-                            
+    ##
+    # @brief Findet Sackgassen und füllt diese auf
+    #
+    #
     def fill_up(self, pos, heading, robo_pos):
-        # Berrechne nachbarn der Mauer
+        # Berrechne Nachbarn der gesetzten Mauer
         for b in range(4):
             tx = pos[0] + self.m[heading - 1][b][0]
             ty = pos[1] + self.m[heading - 1][b][1]
-            wall_env = self.get_env((tx, ty), 0)
-                        
-            count = Counter(wall_env.values())  
+            
+            wall_env = self.get_env((tx, ty), 0)            
+            count = Counter(wall_env.values())
+              
             if count[255] >= 3 and self.get_field((tx,ty)) != 255 and ([tx,ty] != robo_pos):
                 # Bedingung erfüllt, fülle auf mit Mauer
                 self.write((tx, ty),'enviro', 255)
-                
+                # Rekursion        
                 self.fill_up((tx,ty), heading, robo_pos)
                             
+    ##
+    # @brief Setzt das Feld an Stelle pos als besucht
+    #
+    #
     def update_visited(self, pos):
         self.pos = self.toMapPos(pos)
         self.write(pos, 'visited', self.map[self.pos[1]][self.pos[0]]['visited'] + 1)
         
+    ##
+    # @brief Setzt das Feld an der Stelle pos mit dem gegebenen heading
+    #
+    #
     def update_head(self, pos, heading):
         self.pos = self.toMapPos(pos)
         
@@ -156,6 +183,10 @@ class mapping(object):
         elif (heading == self.west):
             self.write(pos, 'h_west', True)
                             
+    ##
+    # @brief gibt die Umgebung an der Stelle pos zurück
+    #
+    #
     def get_env(self, pos, heading):
         data = {}
         tpos = self.toMapPos(pos)
@@ -182,6 +213,10 @@ class mapping(object):
 
         return data
         
+    ##
+    # @brief gibt die Zahl der Besuche der Umgebung um pos zurück
+    #
+    #
     def get_vis_env(self, pos, heading):
         data = {}
         tpos = self.toMapPos(pos)
@@ -207,6 +242,10 @@ class mapping(object):
 
         return data
         
+    ##
+    # @brief Rechnet real-koordinaten in map-koordinaten um
+    #
+    #
     def toMapPos(self, pos):
         # Update Map coords
         data = [0, 0]
@@ -215,10 +254,18 @@ class mapping(object):
         
         return data
         
+    ##
+    # @brief Gibt den Umgebungswert an der Stelle pos zurück
+    #
+    #
     def get_field(self, pos):
         tpos = self.toMapPos(pos)
         return self.map[tpos[1], tpos[0]]['enviro']
         
+    ##
+    # @brief Gibt das heading an der Stelle pos zurück
+    #
+    #
     def get_head(self, pos, heading):
         tpos = self.toMapPos(pos)
         
@@ -231,19 +278,18 @@ class mapping(object):
         elif (heading == self.west):
             return self.map[tpos[1], tpos[0]]['h_west']
         
-    
+    ##
+    # @brief Gibt zurück ob das Feld pos besucht wurde
+    #
+    #
     def get_visited(self, pos):
         tpos = self.toMapPos(pos)
         return self.map[tpos[1], tpos[0]]['visited']
-    
-    def newSubmap():
-        self.submaps.append(self.map)
-        self.map = self.create(self.size)
-        
-    def fillTrap(self, pos):
-        env = self.envAt(pos, self.north)
-        print env
-        
+            
+    ##
+    # @brief Schreibt die Karte in eine Datei (zum anschauen)
+    #
+    #
     def printFile(self):
         mapFile = open("map.txt", "w")
         for i in range(self.size):

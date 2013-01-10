@@ -14,6 +14,8 @@ import  GameVisualizer as viz
 
 import time
 
+from collections import Counter
+
 
 class robot_team2(BaseRobotClient):
     
@@ -21,10 +23,12 @@ class robot_team2(BaseRobotClient):
     East = 1
     South = 2 
     West = 3
-    heading_names = ("North", "East", "South", "West")
-    modes = ("rightHand", "cycle", "bomb", "turn", )
     
+    heading_names = ("North", "East", "South", "West")
+
+    ## groesse der karten-datei
     map_size = 201
+    
     def __init__(self):
         super(robot_team2, self).__init__()  
         self.index = 0
@@ -40,17 +44,17 @@ class robot_team2(BaseRobotClient):
         self.cycle = False
         self.bombed = False
         
-        self.bomb_count = 0
         self.bomb_pos = None
-        self.bombs = 0
-        
-        self.cycle_begin = 0
-        self.cycle_pos = None
+        self.bombs = 3
         
         self.time1 = 0
         self.time2 = 0
         
-        self.gv = viz.GameVisualizer(None)
+        # speicher für die sensor daten
+        self.data = None
+        self.compass = 0.0
+        self.bumper = False
+        self.teleported = False
         
         #Logging
         self.logger = logger.logger()
@@ -60,14 +64,21 @@ class robot_team2(BaseRobotClient):
         
         # define init heading of robot as north
         self.heading = self.North
-        
-    def printLog(self, sensor_data, bumper):
+    
+    ##
+    # @brief schreibt Log in Log-Datei
+    #
+    #
+    def printLog(self):
         self.logger.info("%4i: %-11s in %f sec c:%s wh:%s" % (self.turn, 
                                                         Command.names[self.cmd],
                                                         self.time2 - self.time1,
                                                         self.cycle,
                                                         self.wasHere()))
-        
+    ##
+    # @brief berrechnet die Batterieleistung
+    #
+    #
     def updateBatt(self):
         if(self.cmd == Command.Stay):
             self.batt += 1
@@ -77,8 +88,11 @@ class robot_team2(BaseRobotClient):
             self.batt -= 1
         elif(self.cmd == Command.MoveForward):
             self.batt -= 1
-            
-    def updatePos(self, bumper, teleported):
+    ##
+    # @brief berrechnet die relative Position des Roboters und dessen Drehung
+    #
+    #        
+    def updatePos(self):
         # Update heading of robot
         if(self.cmd == Command.LeftTurn):
             self.heading = (self.heading - 1) % 4
@@ -86,7 +100,7 @@ class robot_team2(BaseRobotClient):
             self.heading = (self.heading + 1) % 4
         
         # If moved update position    
-        elif (self.moved(bumper, teleported)):
+        elif (self.moved()):
             if(self.heading == self.North):
                 self.rel_pos[1] += 1
             elif(self.heading == self.East):
@@ -96,32 +110,44 @@ class robot_team2(BaseRobotClient):
             else:
                 self.rel_pos[0] -= 1  
                 
-    def updateMap(self, sensor_data, compass):
+    def updateMap(self):
         # Map the enviroment
-        self.map.update(self.rel_pos, self.heading+1, sensor_data, compass)
+        self.map.update(self.rel_pos, self.heading+1, self.data, self.compass)
             
     def getNextCommand(self, sensor_data, bumper, compass, teleported):
         self.time1 = time.time()
 
-        print "compass: ", compass
+        print "compass ", compass
         if teleported:
-            a = raw_input()
+            print "Wohhooo"
+        #----------------------------------------------------------------------#
+        #               SAVE_SENSOR_DATA
+        #----------------------------------------------------------------------#
+            
+        self.data = sensor_data
+        self.bumper = bumper
+        self.teleported = teleported
+        self.compass = compass
+           
+        #----------------------------------------------------------------------#
+        #               UPDATE_STATES
+        #----------------------------------------------------------------------#
 
-        self.updatePos(bumper, teleported)          
+        self.updatePos()          
                     
         if (self.map.get_visited(self.rel_pos) == 0):
             self.cycle = False
             self.bombed = False
             
-        if (self.moved(bumper, teleported)):
+        if (self.moved()):
             self.map.update_visited(self.rel_pos)
         
-        self.updateMap(sensor_data, compass)
+        self.updateMap()
         
         self.updateBatt()
            
-        if (sensor_data != None):
-            self.batt = sensor_data["battery"]
+        if (self.data != None):
+            self.batt = self.data["battery"]
 
             
         #----------------------------------------------------------------------#
@@ -133,33 +159,33 @@ class robot_team2(BaseRobotClient):
             self.cmd = Command.Sense
             
             self.time2 = time.time()
-            self.printLog(sensor_data, bumper)
+            self.printLog()
             self.turn += 1
             return self.cmd
             
         # wenn wir nicht scannen
         # holen wir uns die nötigen informationen aus der gemappten umgebung
-        if sensor_data == None:
-            sensor_data = self.map.get_env(self.rel_pos, self.heading + 1)
+        if self.data == None:
+            self.data = self.map.get_env(self.rel_pos, self.heading + 1)
         
         else:
             # Batterie updaten
-            self.batt = sensor_data["battery"]
+            self.batt = self.data["battery"]
             
             # Wenn unsere Map schlauer ist, Werte aus dem Map nehmen
             tmp = self.map.get_env(self.rel_pos, self.heading + 1)
             
             if(tmp['front'] == 255):
-                sensor_data['front'] = tmp['front']
+                self.data['front'] = tmp['front']
                 
             if(tmp['right'] == 255):
-                sensor_data['right'] = tmp['right']
+                self.data['right'] = tmp['right']
                 
             if(tmp['back'] == 255):
-                sensor_data['back'] = tmp['back']
+                self.data['back'] = tmp['back']
                 
             if(tmp['left'] == 255):
-                sensor_data['left'] = tmp['left']
+                self.data['left'] = tmp['left']
                
         
         #----------------------------------------------------------------------#
@@ -168,22 +194,28 @@ class robot_team2(BaseRobotClient):
         if (self.batt == 0):
             self.cmd = Command.Stay
         # Auf jeden Fall in das Ziel lenken.
-        elif (sensor_data['front'] == 192):
+        elif (self.data['front'] == 192):
             self.mv()
-        elif (sensor_data['right'] == 192):
+        elif (self.data['right'] == 192):
             self.rt()
-        elif (sensor_data['left'] == 192):
+        elif (self.data['left'] == 192):
             self.lt()
       
         # Kurvenlicht
         elif (self.turned) and not(self.cycle):
-            if (self.free("front", sensor_data)):
+            if (self.free("front", self.data)):
                 self.mv()
             
-        elif (self.cycle) and (self.free("back", sensor_data)) and (self.bombs > 0) and (self.map.get_visited(self.rel_pos) >= 3) and not (self.bombed):
+        elif ((self.cycle) and 
+              (self.free("back", self.data)) and
+              (self.free("front", self.data)) and
+              (self.bombs > 0) and 
+              (self.map.get_visited(self.rel_pos) >= 3) 
+               and self.noCrossroad()
+               and not self.bombed):
             # Bombe legen
             self.db()
-
+            
             # Bombe liegt hinter uns
             if (self.heading == self.North):
                 self.bomb_pos = (self.rel_pos[0], self.rel_pos[1] - 1)
@@ -193,7 +225,7 @@ class robot_team2(BaseRobotClient):
                 self.bomb_pos = (self.rel_pos[0], self.rel_pos[1] + 1)
             elif (self.heading == self.West):
                 self.bomb_pos = (self.rel_pos[0] + 1, self.rel_pos[1])
-                
+              
             # Update map
             env = {"front" : 0, "left" : 0, "back" : 0, "right" : 0}
             
@@ -201,10 +233,9 @@ class robot_team2(BaseRobotClient):
             
             self.bombed = True
             self.bombs -= 1
-
         
         # Cycle Detect   
-        elif (self.wasHere() and self.moved(bumper, teleported) and self.turn != 2 and not self.turned) or (self.cycle):
+        elif (self.wasHere() and self.moved() and not self.turned) or (self.cycle):
             # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
    
             self.cycle = True
@@ -215,19 +246,19 @@ class robot_team2(BaseRobotClient):
             minimum = 100
             min_index = 0
             
-            if (self.free("front", sensor_data) and vis["front"] < minimum):
+            if (self.free("front", self.data) and vis["front"] < minimum):
                 min_index = 0
                 minimum = vis["front"]
                 
-            if (self.free("right", sensor_data) and vis["right"] < minimum):
+            if (self.free("right", self.data) and vis["right"] < minimum):
                 min_index = 1
                 minimum = vis["right"]
                 
-            if (self.free("back", sensor_data) and vis["back"] < minimum):
+            if (self.free("back", self.data) and vis["back"] < minimum):
                 min_index = 2
                 minimum = vis["back"]
                 
-            if (self.free("left", sensor_data) and vis["left"] < minimum):
+            if (self.free("left", self.data) and vis["left"] < minimum):
                 min_index = 3
                 minimum = vis["left"]
             
@@ -248,15 +279,34 @@ class robot_team2(BaseRobotClient):
                 self.turned = True
             
             else:
-                self.rightHand(sensor_data)
+                self.rightHand()
                        
         # Kompass
-        elif (self.free("front", sensor_data)) and (self.free("right", sensor_data)) and (self.free("left", sensor_data)): 
-            self.compassNav(compass)
-                
+        elif (self.free("front", self.data)) and (self.free("right", self.data)) and (self.free("left", self.data)):            
+            vis = self.map.get_vis_env(self.rel_pos, self.heading + 1)
+            
+            vis_sum = vis["front"] + vis["left"] + vis["back"] + vis["right"]
+            
+            if (vis_sum <= 1):
+                # wenn max ein Nachbarfeld besucht wurde, fahre nach Kompass
+                self.compassNav()
+            else:
+                # Sonst 
+                if(vis["front"] == 0):
+                    self.mv()
+                elif (vis["right"] == 0):
+                    self.rt()
+                elif (vis["left"] == 0):
+                    self.lt()
+                elif (vis["back"] == 0):
+                    self.rt()
+                    self.turned = False
+                else:
+                    self.rightHand()
+                            
         # Righthand
         else:
-            self.rightHand(sensor_data)
+            self.rightHand()
         
         if (self.cmd != Command.Sense) and (self.last_pos != None):
             self.map.update_head(self.last_pos, self.heading + 1)
@@ -265,7 +315,7 @@ class robot_team2(BaseRobotClient):
         
         # Logging
         self.time2 = time.time()
-        self.printLog(sensor_data, bumper)
+        self.printLog()
         self.turn += 1
           
         return self.cmd
@@ -274,12 +324,12 @@ class robot_team2(BaseRobotClient):
     # @brief Definiert das Verhalten nach Kompass-Daten
     #
     #
-    def compassNav(self, compass):
-        if(compass >= 0) and (compass < 3):
+    def compassNav(self):
+        if(self.compass >= 0) and (self.compass < 3):
             self.mv()
-        elif (compass >= 3) and (compass <= 4):
+        elif (self.compass >= 3) and (self.compass <= 4):
             self.rt()
-        elif (compass >= 6) and (compass <= 7):
+        elif (self.compass >= 6) and (self.compass <= 7):
             self.lt()
         else:
             self.rt()
@@ -289,17 +339,17 @@ class robot_team2(BaseRobotClient):
     # @brief Definiert das Verhalten bei rechter-Hand-Regel
     #
     #
-    def rightHand(self, env): 
-        if self.free("right", env):
+    def rightHand(self): 
+        if self.free("right", self.data):
             self.rt()
 
-        elif self.free("front", env):
+        elif self.free("front", self.data):
             self.mv()
                 
-        elif self.free("left", env):
+        elif self.free("left", self.data):
             self.lt()
                
-        elif self.free("back", env):
+        elif self.free("back", self.data):
             self.rt()
             self.turned = False
     ##
@@ -313,6 +363,14 @@ class robot_team2(BaseRobotClient):
         else:
             return False
     
+    ##
+    # @brief Gibt zurück ob man sich auf eine Kreuzung befindet
+    #
+    #
+    def noCrossroad(self):
+        count = Counter(self.data.values())
+        return count[255] >= 2
+        
     ##
     # @brief Gibt zurück ob Feld schon besucht wurde
     #
@@ -331,8 +389,8 @@ class robot_team2(BaseRobotClient):
     # @brief Gibt zurück ob der Roboter sich im letzten Zug bewegt hat
     #
     #
-    def moved(self, bumper, teleported):
-        return (self.cmd == Command.MoveForward) and not bumper and (self.batt > 0) and not teleported
+    def moved(self):
+        return (self.cmd == Command.MoveForward) and not self.bumper and (self.batt > 0) and not self.teleported
     
     ##
     # @brief Roboter eine Linkskurve machen lassen
