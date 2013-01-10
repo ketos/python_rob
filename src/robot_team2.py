@@ -143,30 +143,23 @@ class robot_team2(BaseRobotClient):
             sensor_data = self.map.get_env(self.rel_pos, self.heading + 1)
         
         else:
+            # Batterie updaten
             self.batt = sensor_data["battery"]
+            
+            # Wenn unsere Map schlauer ist, Werte aus dem Map nehmen
             tmp = self.map.get_env(self.rel_pos, self.heading + 1)
             
-            if(sensor_data['front'] != tmp['front'] and tmp['front'] == 255):
+            if(tmp['front'] == 255):
                 sensor_data['front'] = tmp['front']
                 
-            if(sensor_data['right'] != tmp['right'] and tmp['right'] == 255):
+            if(tmp['right'] == 255):
                 sensor_data['right'] = tmp['right']
                 
-            if(sensor_data['back'] != tmp['back'] and tmp['back'] == 255):
+            if(tmp['back'] == 255):
                 sensor_data['back'] = tmp['back']
                 
-            if(sensor_data['left'] != tmp['left'] and tmp['left'] == 255):
+            if(tmp['left'] == 255):
                 sensor_data['left'] = tmp['left']
-
-        '''
-        # Debug ------
-        # Print Enviroment
-        print "iam at ", self.rel_pos
-        print "   %s" % (self.gv.FORMATTER[sensor_data["front"]]) 
-        print " %s ^ %s" % (self.gv.FORMATTER[sensor_data["left"]],self.gv.FORMATTER[sensor_data["right"]])
-        print "   %s" % (self.gv.FORMATTER[sensor_data["back"]])
-        '''
-        #a = raw_input()
                
         
         #----------------------------------------------------------------------#
@@ -190,7 +183,7 @@ class robot_team2(BaseRobotClient):
         elif (self.cycle) and (self.free("back", sensor_data)) and (self.bombs > 0) and (self.map.get_visited(self.rel_pos) >= 3) and not (self.bombed):
             # Bombe legen
             self.db()
-            #a = raw_input()
+
             # Bombe liegt hinter uns
             if (self.heading == self.North):
                 self.bomb_pos = (self.rel_pos[0], self.rel_pos[1] - 1)
@@ -209,18 +202,11 @@ class robot_team2(BaseRobotClient):
             self.bombed = True
             self.bombs -= 1
 
-            #self.cycle = False
         
         # Cycle Detect   
         elif (self.wasHere() and self.moved(bumper, teleported) and self.turn != 2 and not self.turned) or (self.cycle):
             # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
-            a = raw_input()
-            
-            if (not self.cycle):
-                # Erster Punkt des cyclen
-                self.cycle_pos = self.rel_pos
-                self.cycle_begin = self.turn
-                
+   
             self.cycle = True
             
             # Besuche das Feld mit den geringsten Besuchen
@@ -266,15 +252,7 @@ class robot_team2(BaseRobotClient):
                        
         # Kompass
         elif (self.free("front", sensor_data)) and (self.free("right", sensor_data)) and (self.free("left", sensor_data)): 
-            if(compass >= 0) and (compass < 3):
-                self.mv()
-            elif (compass >= 3) and (compass <= 4):
-                self.rt()
-            elif (compass >= 6) and (compass <= 7):
-                self.lt()
-            else:
-                self.rt()
-                self.turned = False
+            self.compassNav(compass)
                 
         # Righthand
         else:
@@ -291,7 +269,22 @@ class robot_team2(BaseRobotClient):
         self.turn += 1
           
         return self.cmd
-    
+        
+    ##
+    # @brief Definiert das Verhalten nach Kompass-Daten
+    #
+    #
+    def compassNav(self, compass):
+        if(compass >= 0) and (compass < 3):
+            self.mv()
+        elif (compass >= 3) and (compass <= 4):
+            self.rt()
+        elif (compass >= 6) and (compass <= 7):
+            self.lt()
+        else:
+            self.rt()
+            self.turned = False
+        
     ##
     # @brief Definiert das Verhalten bei rechter-Hand-Regel
     #
@@ -340,21 +333,41 @@ class robot_team2(BaseRobotClient):
     #
     def moved(self, bumper, teleported):
         return (self.cmd == Command.MoveForward) and not bumper and (self.batt > 0) and not teleported
-        
+    
+    ##
+    # @brief Roboter eine Linkskurve machen lassen
+    #
+    #  
     def lt(self):
         self.cmd = Command.LeftTurn
         self.turned = True
         
+    ##
+    # @brief Roboter eine Rechtskurve machen lassen
+    # 
+    #
     def rt(self):
         self.cmd = Command.RightTurn
         self.turned = True
-        
+    
+    ##
+    # @brief Einen Schritt vor
+    #
+    #    
     def mv(self):
         self.cmd = Command.MoveForward
         self.turned = False
         
+    ##
+    # @brief Roboter Bombe fallen lassen.
+    #
+    #
     def db(self):
         self.cmd = Command.DropBomb
         
+    ##
+    # @brief Destructor - Karte zeichnen
+    #
+    #
     def __del__(self):
         self.map.printFile()
