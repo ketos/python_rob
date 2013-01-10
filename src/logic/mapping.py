@@ -50,6 +50,13 @@ class mapping(object):
          ((0 , 1), (-1, 0), (0 ,-1), (1 , 0)), # heading South
          ((-1, 0), (0 ,-1), (1 , 0), (0 , 1))  # heading West
         )
+        
+    m = (
+         ((0 , 1), (1 , 0), (0 ,-1), (-1, 0)), # heading North
+         ((1 , 0), (0 ,-1), (-1, 0), (0 , 1)), # heading East
+         ((0 ,-1), (-1, 0), (0 , 1), (1 , 0)), # heading South
+         ((-1, 0), (0 , 1), (1 , 0), (0 ,-1))  # heading West
+        )
     
     
     def __init__(self, size=1):
@@ -77,15 +84,6 @@ class mapping(object):
     def update(self, pos, heading, env, compass):
         self.pos = self.toMapPos(pos)
         
-        if (heading == self.north):
-            self.write(pos, 'h_north', True)
-        elif (heading == self.east):
-            self.write(pos, 'h_east', True)
-        elif (heading == self.south):
-            self.write(pos, 'h_south', True)
-        elif (heading == self.west):
-            self.write(pos, 'h_west', True)
-        
         # die compass daten mussen angepasst werden
         # mit dem aktuellen heading
         if (compass != None):
@@ -108,10 +106,11 @@ class mapping(object):
                 y = (self.pos[1] + self.n[heading - 1][i][1])
                 
                 tmp = self.map[y, x]['enviro']
-                #print "i: ",i, " add ", env[self.dir_names[i]], " (", self.dir_names[i], ") at ", self.pos[0] + self.n[heading-1][i][0], ",", self.pos[1] + self.n[heading-1][i][1],self.n[heading-1][i], "to map"
                 
-                self.map[y, x]['enviro'] = env[self.dir_names[i]]
-                #print "Set ",env[self.dir_names[i]]," at ",pos[0] + self.n[heading-1][i][0],", ",pos[1] + self.n[heading-1][i][1] , "was ", tmp
+                # keine Roboter mappen
+                if (env[self.dir_names[i]] < 150 or env[self.dir_names[i]] > 161) and (env[self.dir_names[i]] != 0):
+                    self.map[y, x]['enviro'] = env[self.dir_names[i]]
+
                 
                 #--------------------------------------------------------------#
                 #       SACKGASSEN_LOGIC
@@ -121,27 +120,41 @@ class mapping(object):
                     # Wenn wir eine Mauer gesetzt haben
                     
                     # Position des gestzen Mauerstücks (in real Koordinaten)
-                    x = (pos[0] + self.n[heading - 1][i][0])
-                    y = (pos[1] + self.n[heading - 1][i][1])
+                    x = (pos[0] + self.m[heading - 1][i][0])
+                    y = (pos[1] + self.m[heading - 1][i][1])
+                      
+                    self.fill_up((x,y), heading, pos)  
+                    
+                            
+    def fill_up(self, pos, heading, robo_pos):
+        # Berrechne nachbarn der Mauer
+        for b in range(4):
+            tx = pos[0] + self.m[heading - 1][b][0]
+            ty = pos[1] + self.m[heading - 1][b][1]
+            wall_env = self.get_env((tx, ty), 0)
                         
-                    for b in range(4):
-                        tx = x + self.n[heading - 1][b][0]
-                        ty = y + self.n[heading - 1][b][1]
-                        # print "Look at ",tx,", ",ty
-                        wall_env = self.get_env((tx, ty), i)
-                        # print wall_env
-                        
-                        count = Counter(wall_env.values())
-                        
-                        if count[255] >= 3 and self.map[ty, tx]['enviro'] != 255:
-                            # Bedingung erfüllt, fülle auf mit Mauer
-                            # print "Füllung bei ",tx,",",ty
-                            # a = raw_input()
-                            self.map[ty, tx]['enviro'] = 255
+            count = Counter(wall_env.values())  
+            if count[255] >= 3 and self.get_field((tx,ty)) != 255 and ([tx,ty] != robo_pos):
+                # Bedingung erfüllt, fülle auf mit Mauer
+                self.write((tx, ty),'enviro', 255)
+                
+                self.fill_up((tx,ty), heading, robo_pos)
                             
     def update_visited(self, pos):
         self.pos = self.toMapPos(pos)
-        self.write(pos, 'visited', self.map[self.pos[1]][self.pos[0]]['visited'] + 1) 
+        self.write(pos, 'visited', self.map[self.pos[1]][self.pos[0]]['visited'] + 1)
+        
+    def update_head(self, pos, heading):
+        self.pos = self.toMapPos(pos)
+        
+        if (heading == self.north):
+            self.write(pos, 'h_north', True)
+        elif (heading == self.east):
+            self.write(pos, 'h_east', True)
+        elif (heading == self.south):
+            self.write(pos, 'h_south', True)
+        elif (heading == self.west):
+            self.write(pos, 'h_west', True)
                             
     def get_env(self, pos, heading):
         data = {}
@@ -164,6 +177,31 @@ class mapping(object):
             
         try:
             data["left"] = self.map[tpos[1] + self.n[heading-1][3][1], tpos[0] + self.n[heading-1][3][0]]['enviro']
+        except IndexError:
+            data["left"] = -1
+
+        return data
+        
+    def get_vis_env(self, pos, heading):
+        data = {}
+        tpos = self.toMapPos(pos)
+        try:
+            data["front"] = self.map[tpos[1] + self.n[heading-1][0][1], tpos[0] + self.n[heading-1][0][0]]['visited']
+        except IndexError:
+            data["front"] = -1
+            
+        try:    
+            data["right"] = self.map[tpos[1] + self.n[heading-1][1][1], tpos[0] + self.n[heading-1][1][0]]['visited']
+        except IndexError:
+            data["right"] = -1
+            
+        try:
+            data["back"] = self.map[tpos[1] + self.n[heading-1][2][1], tpos[0] + self.n[heading-1][2][0]]['visited']
+        except IndexError:
+            data["back"] = -1
+            
+        try:
+            data["left"] = self.map[tpos[1] + self.n[heading-1][3][1], tpos[0] + self.n[heading-1][3][0]]['visited']
         except IndexError:
             data["left"] = -1
 

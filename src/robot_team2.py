@@ -29,10 +29,12 @@ class robot_team2(BaseRobotClient):
         super(robot_team2, self).__init__()  
         self.index = 0
         self.turn = 1
+        self.last_cmd = 0
         self.cmd = -1
         self.batt = 100
 
         self.rel_pos = [0, 0]
+        self.last_pos = None
 
         self.turned = False
         self.cycle = False
@@ -40,7 +42,7 @@ class robot_team2(BaseRobotClient):
         
         self.bomb_count = 0
         self.bomb_pos = None
-        self.bombs = 1
+        self.bombs = 0
         
         self.cycle_begin = 0
         self.cycle_pos = None
@@ -92,10 +94,7 @@ class robot_team2(BaseRobotClient):
             elif(self.heading == self.South):
                 self.rel_pos[1] -= 1
             else:
-                self.rel_pos[0] -= 1
-                
-            self.map.update_visited(self.rel_pos)
-                
+                self.rel_pos[0] -= 1  
                 
     def updateMap(self, sensor_data, compass):
         # Map the enviroment
@@ -106,31 +105,31 @@ class robot_team2(BaseRobotClient):
 
         print "compass: ", compass
         if teleported:
-            print "ups I was teleported"
-            self.map = None
-            self.map = mapping.mapping(self.map_size)
-            self.rel_pos = [0, 0]
-            
-            self.map.write(self.rel_pos, 'enviro', 255)
-            
             a = raw_input()
 
         self.updatePos(bumper, teleported)          
+                    
+        if (self.map.get_visited(self.rel_pos) == 0):
+            self.cycle = False
+            self.bombed = False
+            
+        if (self.moved(bumper, teleported)):
+            self.map.update_visited(self.rel_pos)
         
         self.updateMap(sensor_data, compass)
+        
+        self.updateBatt()
            
         if (sensor_data != None):
             self.batt = sensor_data["battery"]
-            
+
             
         #----------------------------------------------------------------------#
         #               SCAN_LOGIC
         #----------------------------------------------------------------------#
             
-        # nur alle zwei runden scannen und wenn das aktuelle
-        # feld noch nicht besucht wurde
-        if (self.cmd != Command.Sense) and (self.map.get_visited(self.rel_pos) < 2):
-                
+        # nur scannen wenn wir hier noch nicht waren oder wir irgendwo anstossen
+        if (self.cmd != Command.Sense) and (self.map.get_visited(self.rel_pos) < 2) or (bumper):
             self.cmd = Command.Sense
             
             self.time2 = time.time()
@@ -138,30 +137,27 @@ class robot_team2(BaseRobotClient):
             self.turn += 1
             return self.cmd
             
-        # wenn wir nicht jeden zweiten zug scannen
+        # wenn wir nicht scannen
         # holen wir uns die nötigen informationen aus der gemappten umgebung
         if sensor_data == None:
             sensor_data = self.map.get_env(self.rel_pos, self.heading + 1)
         
         else:
+            self.batt = sensor_data["battery"]
             tmp = self.map.get_env(self.rel_pos, self.heading + 1)
-
-            if(sensor_data['front'] != tmp['front']):
-                print "front correction"
+            
+            if(sensor_data['front'] != tmp['front'] and tmp['front'] == 255):
                 sensor_data['front'] = tmp['front']
                 
-            if(sensor_data['right'] != tmp['right']):
-                print "right correction"
+            if(sensor_data['right'] != tmp['right'] and tmp['right'] == 255):
                 sensor_data['right'] = tmp['right']
                 
-            if(sensor_data['back'] != tmp['back']):
-                print "back correction"
+            if(sensor_data['back'] != tmp['back'] and tmp['back'] == 255):
                 sensor_data['back'] = tmp['back']
                 
-            if(sensor_data['left'] != tmp['left']):
-                print "left correction"
+            if(sensor_data['left'] != tmp['left'] and tmp['left'] == 255):
                 sensor_data['left'] = tmp['left']
-        
+
         '''
         # Debug ------
         # Print Enviroment
@@ -175,36 +171,31 @@ class robot_team2(BaseRobotClient):
         
         #----------------------------------------------------------------------#
         #               PATH_LOGIC
-        #----------------------------------------------------------------------#
-        
+        #----------------------------------------------------------------------#        
+        if (self.batt == 0):
+            self.cmd = Command.Stay
         # Auf jeden Fall in das Ziel lenken.
-        if (sensor_data['front'] == 192):
+        elif (sensor_data['front'] == 192):
             self.mv()
         elif (sensor_data['right'] == 192):
             self.rt()
         elif (sensor_data['left'] == 192):
             self.lt()
-        
       
         # Kurvenlicht
         elif (self.turned) and not(self.cycle):
             if (self.free("front", sensor_data)):
                 self.mv()
-        
-        # Bombe / Deadlock
-        elif (self.cycle) and (self.map.get_visited(self.rel_pos) >= 3) and not (self.bombed) and (self.bombs > 0):
-            self.bombed = True
-            self.rightHand(sensor_data)
             
-        elif (self.bombed) and (self.free("back", sensor_data)):
+        elif (self.cycle) and (self.free("back", sensor_data)) and (self.bombs > 0) and (self.map.get_visited(self.rel_pos) >= 3) and not (self.bombed):
             # Bombe legen
             self.db()
-            a = raw_input()
+            #a = raw_input()
             # Bombe liegt hinter uns
             if (self.heading == self.North):
                 self.bomb_pos = (self.rel_pos[0], self.rel_pos[1] - 1)
             elif (self.heading == self.East):
-                self.bomb_pos = (self.rel_pos[0] -1 , self.rel_pos[1])
+                self.bomb_pos = (self.rel_pos[0] - 1, self.rel_pos[1])
             elif (self.heading == self.South):
                 self.bomb_pos = (self.rel_pos[0], self.rel_pos[1] + 1)
             elif (self.heading == self.West):
@@ -215,16 +206,16 @@ class robot_team2(BaseRobotClient):
             
             self.map.update(self.bomb_pos, self.heading, env, None)
             
-            self.bombed = False
+            self.bombed = True
             self.bombs -= 1
-            
-            self.bomb_count = 0
-            self.cycle = False
+
+            #self.cycle = False
         
         # Cycle Detect   
         elif (self.wasHere() and self.moved(bumper, teleported) and self.turn != 2 and not self.turned) or (self.cycle):
             # Deadlock -Erkennung und -Behebung bei Rechte-Hand Strategie
             a = raw_input()
+            
             if (not self.cycle):
                 # Erster Punkt des cyclen
                 self.cycle_pos = self.rel_pos
@@ -232,21 +223,68 @@ class robot_team2(BaseRobotClient):
                 
             self.cycle = True
             
-            if (self.free("front", sensor_data)) and (self.free("right", sensor_data)):
-                # Wir können dem Deadlock Weiterfahren entkommen,
-                # auch wenn wir rechts abbiegen müssten.
+            # Besuche das Feld mit den geringsten Besuchen
+            vis = self.map.get_vis_env(self.rel_pos, self.heading + 1)
+
+            minimum = 100
+            min_index = 0
+            
+            if (self.free("front", sensor_data) and vis["front"] < minimum):
+                min_index = 0
+                minimum = vis["front"]
+                
+            if (self.free("right", sensor_data) and vis["right"] < minimum):
+                min_index = 1
+                minimum = vis["right"]
+                
+            if (self.free("back", sensor_data) and vis["back"] < minimum):
+                min_index = 2
+                minimum = vis["back"]
+                
+            if (self.free("left", sensor_data) and vis["left"] < minimum):
+                min_index = 3
+                minimum = vis["left"]
+            
+
+            
+            if (min_index == 0):
                 self.mv()
-                self.cycle = False
-            elif (self.free("left", sensor_data)):
-                # Wir können dem Deadlock durch eine Linkskurve entkommen
+                
+            elif (min_index == 1):
+                self.rt()
+                self.turned = True
+                
+            elif (min_index == 2):
+                self.rt()
+                
+            elif (min_index == 3):
                 self.lt()
-                self.cycle = False
+                self.turned = True
+            
             else:
                 self.rightHand(sensor_data)
+                       
+        # Kompass
+        elif (self.free("front", sensor_data)) and (self.free("right", sensor_data)) and (self.free("left", sensor_data)): 
+            if(compass >= 0) and (compass < 3):
+                self.mv()
+            elif (compass >= 3) and (compass <= 4):
+                self.rt()
+            elif (compass >= 6) and (compass <= 7):
+                self.lt()
+            else:
+                self.rt()
+                self.turned = False
+                
         # Righthand
         else:
             self.rightHand(sensor_data)
-          
+        
+        if (self.cmd != Command.Sense) and (self.last_pos != None):
+            self.map.update_head(self.last_pos, self.heading + 1)
+            
+        self.last_pos = self.rel_pos
+        
         # Logging
         self.time2 = time.time()
         self.printLog(sensor_data, bumper)
@@ -254,7 +292,11 @@ class robot_team2(BaseRobotClient):
           
         return self.cmd
     
-    def rightHand(self, env):
+    ##
+    # @brief Definiert das Verhalten bei rechter-Hand-Regel
+    #
+    #
+    def rightHand(self, env): 
         if self.free("right", env):
             self.rt()
 
@@ -263,23 +305,39 @@ class robot_team2(BaseRobotClient):
                 
         elif self.free("left", env):
             self.lt()
-                
+               
         elif self.free("back", env):
             self.rt()
             self.turned = False
-                
+    ##
+    # @brief Gibt zurück ob ein Feld frei ist
+    #
+    #           
     def free(self, direction, env):
         tmp = env[direction]
         if (tmp == 0) or (tmp == 128)  or (tmp == 192):
             return True
         else:
             return False
+    
+    ##
+    # @brief Gibt zurück ob Feld schon besucht wurde
+    #
+    #       
     def visited(self, pos):
         return self.map.get_visited(pos) > 0
-        
+    
+    ##
+    # @brief Gibt zurück ob aktuelles Feld schon in aktueller Richtung
+    #        besucht wurde
+    #   
     def wasHere(self):
         return self.map.get_head(self.rel_pos, self.heading + 1)       
         
+    ##
+    # @brief Gibt zurück ob der Roboter sich im letzten Zug bewegt hat
+    #
+    #
     def moved(self, bumper, teleported):
         return (self.cmd == Command.MoveForward) and not bumper and (self.batt > 0) and not teleported
         
